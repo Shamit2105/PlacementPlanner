@@ -46,7 +46,9 @@ class Command(BaseCommand):
         structured_llm = llm.with_structured_output(InterviewExtraction)
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an expert data extractor. Read the following interview experience and extract the requested data. If no DSA questions or core topics are found, return an empty list. Do not invent information."),
+            ("system", "You are an expert data extractor. Read the following interview experience and "
+            "extract the requested data. If no DSA questions or core topics are found, return an empty list."
+            " Do not invent information."),
             ("user", "RAW TEXT:\n\n{raw_text}")
         ])
 
