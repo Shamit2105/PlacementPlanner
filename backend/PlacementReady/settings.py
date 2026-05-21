@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS =  ['localhost', '127.0.0.1', '13.201.103.43']
+ALLOWED_HOSTS =  ['localhost', '127.0.0.1', '13.126.65.200']
 
 
 # Application definition
@@ -44,12 +44,27 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    #swagger
+    'drf_spectacular',
+
     #apps
     'users',
     'companies',
 
     
 ]
+
+REST_FRAMEWORK = {
+    
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'PlacementReady API',
+    'DESCRIPTION': 'API endpoints for the Placement Planner, RAG Bot, and Bookmarks.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
