@@ -66,13 +66,14 @@ class Command(BaseCommand):
                     exp.extracted_dsa_questions = result.dsa_questions
                     exp.extracted_core_topics = result.core_topics
                     exp.is_extracted = True
+                    exp.raw_text = ""
                     exp.save()
                     
                     success_count += 1
                     self.stdout.write(self.style.SUCCESS(f"      -> Found {len(result.dsa_questions)} DSA, {len(result.core_topics)} Core"))
-                    if exp.is_extracted==True:
-                        continue
+                    
                     time.sleep(5)
+                    break
                 except Exception as e:
                     error_msg = str(e)
 

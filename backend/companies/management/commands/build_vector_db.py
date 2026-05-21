@@ -56,11 +56,24 @@ class Command(BaseCommand):
             try:
                 self.stdout.write(f"  [+] Processing: {exp.company.name} ({exp.get_round_type_display()})")
                 
-                raw_text = exp.raw_text or ""
-                chunks = text_splitter.split_text(raw_text)
+                clean_text_lines = []
+
+                if exp.extracted_dsa_questions:
+                    clean_text_lines.extend(exp.extracted_dsa_questions)
+                    
+                if exp.extracted_core_topics:
+                    clean_text_lines.extend(exp.extracted_core_topics)
+
+                if not clean_text_lines:
+                    self.stdout.write(self.style.WARNING("      [-] Skipped: No questions were extracted by Gemini."))
+                    exp.is_vectorized = True 
+                    exp.save()
+                    continue
                 
-                # Remove empty chunks
-                chunks = [chunk for chunk in chunks if chunk.strip()]
+                combined_clean_text = "\n\n".join(clean_text_lines)
+                
+                # Now split the CLEAN text, not the raw text
+                chunks = text_splitter.split_text(combined_clean_text)
 
                 if not chunks:
                     self.stdout.write(self.style.WARNING("      [-] Skipped: No valid text found."))

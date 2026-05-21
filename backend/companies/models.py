@@ -34,7 +34,8 @@ class PlacementExperience(models.Model):
     
     source_platform = models.CharField(max_length=100) 
     source_url = models.URLField(unique=True) 
-    raw_text = models.TextField()
+    raw_text = models.TextField(null=True,blank=True)
+    content_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
 
     extracted_dsa_questions = models.JSONField(default=list, blank=True)
     extracted_core_topics = models.JSONField(default=list, blank=True)
