@@ -6,12 +6,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
-# 1. FIXED PATHING: Added an extra .parent so it points to the outer 'backend' folder
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load the invisible environment file
-env_path = BASE_DIR / '.env'
-load_dotenv(env_path)
+# 2. We don't even need to force load_dotenv anymore because Docker handles it natively!
+load_dotenv()
 
 # ==========================================
 # DYNAMIC ENVIRONMENT CONFIGURATION
@@ -27,7 +25,7 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 ALLOWED_HOSTS = allowed_hosts_str.split(',')
 
-
+print(os.environ.get('DATABASE_URL'))
 # ==========================================
 # APPLICATION DEFINITION
 # ==========================================
@@ -49,6 +47,7 @@ INSTALLED_APPS = [
     # Local Apps
     'users',
     'companies',
+    'base',
 ]
 
 MIDDLEWARE = [
@@ -87,10 +86,14 @@ AUTH_USER_MODEL = 'users.User'
 # ==========================================
 # DATABASE
 # ==========================================
+db_url = os.environ.get('DATABASE_URL')
+
+if not db_url:
+    raise ValueError("CRITICAL ERROR: DATABASE_URL is missing! Docker is not passing the .env file.")
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+    'default': dj_database_url.parse(
+        db_url,
         conn_max_age=600,   # Persistent connection
         ssl_require=True    # Supabase requires SSL
     )
@@ -105,6 +108,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'EXCEPTION_HANDLER': 'base.exceptions.custom_exception_handler',
 }
 
 SPECTACULAR_SETTINGS = {
@@ -136,3 +140,62 @@ TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
+
+
+# Create a logs directory in your backend folder if it doesn't exist
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} | Module: {module} | Process: {process:d} | Thread: {thread:d} | {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '[{asctime}] {levelname} | {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'file': {
+            'level': 'WARNING', # Only log Warnings and Critical errors to the file to save disk space
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'placement_ready.log'),
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB per file
+            'backupCount': 5,             # Keep the last 5 files
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        # Django's internal system logs
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+            'propagate': True,
+        },
+        # Your custom app logs
+        'base': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'users': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'companies': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
