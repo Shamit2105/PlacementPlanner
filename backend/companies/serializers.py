@@ -4,7 +4,7 @@ from .models import Company, PlacementExperience
 class CompanyResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ['id', 'name', 'slug']
+        fields = ['id', 'name', 'slug','ai_trend_analysis',]
 
 class PlacementExperienceResponseSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)

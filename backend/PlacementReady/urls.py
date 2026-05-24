@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework_simplejwt.views import (TokenObtainPairView,TokenRefreshView)
 
 # Import your newly refactored ViewSets
 from users.views import UserViewSet, SavedExperienceViewSet
@@ -35,6 +36,11 @@ urlpatterns = [
 
     # 1. Main REST API (Handles all the router endpoints above)
     path('api/', include(router.urls)),
+
+    path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    
+    # This generates a new Access token when the old one expires.
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # 2. Custom AI RAG Endpoint
     #path('api/bot/ask/', placement_bot_query, name='ask_bot'),

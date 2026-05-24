@@ -6,6 +6,7 @@ from base.models import AbstractBaseModel
 class Company(AbstractBaseModel):
     name = models.CharField(max_length=255, unique=True, help_text=_("Company Name"))
     slug = models.SlugField(max_length=255, unique=True, blank=True)
+    ai_trend_analysis = models.JSONField(blank=True,null=True)
     
     class Meta:
         db_table = 'pr_company'
