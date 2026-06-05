@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'users',
     'companies',
     'base',
+    'interviews'
 ]
 
 MIDDLEWARE = [
@@ -236,3 +237,12 @@ CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+
+GEMINI_API_KEY = os.environ.get('GOOGLE_API_KEY', "")
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
+GROQ_API_KEY=os.environ.get("GROQ_API_KEY","")
+
+
+GEMINI_SLEEP_SECONDS = 10
+GEMINI_EMBED_SLEEP_SECONDS = 0

@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { AuthState, AuthTokens, User, LoginCredentials } from '../types';
+import { AuthState, AuthTokens, LoginCredentials, User } from '../types';
 import { authApi } from '../services/auth';
 import { usersApi } from '../services/api';
+
+interface TokenClaims {
+  user_id?: number;
+  email?: string;
+  exp: number;
+}
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -12,7 +18,7 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
@@ -20,11 +26,7 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
     user: null,
     tokens: null,
@@ -32,49 +34,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading: true,
   });
 
-  // Check for existing tokens on mount
+  const fetchUser = async (claims: TokenClaims): Promise<User | null> => {
+    if (!claims.user_id) return null;
+
+    try {
+      return await usersApi.getById(claims.user_id);
+    } catch {
+      return null;
+    }
+  };
+
+  const persistSession = (tokens: AuthTokens, user: User | null) => {
+    localStorage.setItem('auth_tokens', JSON.stringify(tokens));
+    setState({
+      user,
+      tokens,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  };
+
   useEffect(() => {
-    const initAuth = async () => {
-      const tokensStr = localStorage.getItem('auth_tokens');
-      if (tokensStr) {
-        try {
-          const tokens: AuthTokens = JSON.parse(tokensStr);
-          const decoded: any = jwtDecode(tokens.access);
-          
-          // Check if token is expired
-          if (decoded.exp * 1000 < Date.now()) {
-            // Try to refresh token
-            const newTokens = await authApi.refreshToken(tokens.refresh);
-            localStorage.setItem('auth_tokens', JSON.stringify(newTokens));
-            
-            // Fetch user data
-            const user = await usersApi.getById(decoded.user_id);
-            setState({
-              user,
-              tokens: newTokens,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          } else {
-            // Token is valid, fetch user data
-            const user = await usersApi.getById(decoded.user_id);
-            setState({
-              user,
-              tokens,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          }
-        } catch (error) {
-          localStorage.removeItem('auth_tokens');
-          setState({
-            user: null,
-            tokens: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
+    const init = async () => {
+      const stored = localStorage.getItem('auth_tokens');
+      if (!stored) {
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      try {
+        const parsed: AuthTokens = JSON.parse(stored);
+        let access = parsed.access;
+        let refresh = parsed.refresh;
+
+        const claims = jwtDecode<TokenClaims>(access);
+
+        if (claims.exp * 1000 < Date.now()) {
+          const refreshed = await authApi.refreshToken(refresh);
+          access = refreshed.access || access;
+          refresh = refreshed.refresh || refresh;
         }
-      } else {
+
+        const nextTokens = { access, refresh };
+        const nextClaims = jwtDecode<TokenClaims>(access);
+        const user = await fetchUser(nextClaims);
+
+        persistSession(nextTokens, user);
+      } catch {
+        localStorage.removeItem('auth_tokens');
         setState({
           user: null,
           tokens: null,
@@ -84,22 +91,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    initAuth();
+    init();
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
     const tokens = await authApi.login(credentials);
-    localStorage.setItem('auth_tokens', JSON.stringify(tokens));
-    
-    const decoded: any = jwtDecode(tokens.access);
-    const user = await usersApi.getById(decoded.user_id);
-    
-    setState({
-      user,
-      tokens,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+    const claims = jwtDecode<TokenClaims>(tokens.access);
+    const user = await fetchUser(claims);
+    persistSession(tokens, user);
   };
 
   const logout = () => {
@@ -113,12 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const updateUser = (user: User) => {
-    setState(prev => ({ ...prev, user }));
+    setState((prev) => ({ ...prev, user }));
   };
 
-  return (
-    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>{children}</AuthContext.Provider>;
 };

@@ -24,7 +24,7 @@ services:
     build: .
     container_name: placement_celery
     working_dir: /app/backend
-    command: celery -A PlacementReady worker -l info 
+    command: celery -A PlacementReady worker -l info --concurrency=2
     volumes:
       - ./backend:/app/backend
     env_file:

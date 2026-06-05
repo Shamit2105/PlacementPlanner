@@ -1,28 +1,69 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-soft: #fffaf4;
+    --bg-accent: #ffedd5;
+    --brand-ink: #1f2937;
+    --brand-coral: #f97316;
+    --brand-sky: #0ea5e9;
+  }
+
   body {
-    @apply font-sans antialiased text-gray-800;
+    @apply font-sans antialiased text-slate-800;
+    background:
+      radial-gradient(circle at 10% 20%, #fff3e6 0%, transparent 35%),
+      radial-gradient(circle at 90% 0%, #eaf8ff 0%, transparent 35%),
+      linear-gradient(180deg, #fffdf9 0%, #fff8f1 100%);
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
   }
 }
 
 @layer components {
-  .glass-effect {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  .surface {
+    @apply rounded-2xl border border-amber-100 bg-white/85 backdrop-blur-sm shadow-[0_12px_35px_-24px_rgba(251,146,60,0.6)];
   }
-  
+
   .gradient-text {
-    @apply bg-gradient-to-r from-ocean-700 to-primary-700 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-orange-600 via-amber-500 to-sky-600 bg-clip-text text-transparent;
+  }
+
+  .stagger-enter {
+    animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .ambient-grid {
+    background-image: linear-gradient(to right, rgba(251, 191, 36, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(14, 165, 233, 0.06) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -30,12 +71,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #3b82f6, #22c55e);
-  border-radius: 3px;
+  background: linear-gradient(to bottom, #fb923c, #0ea5e9);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #2563eb, #16a34a);
+  background: linear-gradient(to bottom, #f97316, #0284c7);
 }
 
 /* Smooth animations */
