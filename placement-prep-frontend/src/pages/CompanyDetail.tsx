@@ -68,7 +68,7 @@ const CompanyDetail: React.FC = () => {
             <h1 className="text-3xl text-slate-900">{company.name}</h1>
             <p className="mt-2 text-sm uppercase tracking-[0.14em] text-slate-500">slug: {company.slug}</p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-white px-4 py-3 text-right">
+          <div className="rounded-xl border border-cyan-200 bg-white px-4 py-3 text-right">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Question hits</p>
             <p className="text-2xl font-display text-slate-900">{questions.length}</p>
           </div>
@@ -80,7 +80,7 @@ const CompanyDetail: React.FC = () => {
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             placeholder="Search questions in this company"
-            className="w-full rounded-xl border border-amber-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-orange-200 focus:ring"
+            className="w-full rounded-xl border border-cyan-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-cyan-200 focus:ring"
           />
         </label>
       </section>
@@ -89,7 +89,7 @@ const CompanyDetail: React.FC = () => {
         {filteredQuestions.map((question) => (
           <article key={question.id} className="surface p-5">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-800">
+              <span className="rounded-full bg-cyan-100 px-2 py-1 font-semibold text-cyan-800">
                 {question.question_type_display}
               </span>
               <span className="rounded-full bg-sky-100 px-2 py-1 font-semibold text-sky-800">

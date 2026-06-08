@@ -15,7 +15,7 @@ const navItems = [
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-xl px-3 py-2 text-sm font-semibold ${
     isActive
-      ? 'bg-amber-100 text-amber-800 shadow-sm shadow-amber-200/60'
+      ? 'bg-cyan-100 text-cyan-800 shadow-sm shadow-cyan-200/60'
       : 'text-slate-700 hover:bg-white/70 hover:text-slate-900'
   }`;
 
@@ -31,10 +31,10 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-amber-100/70 bg-[#fff8ef]/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-cyan-200/70 bg-[#f0fdfa]/90 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 text-white shadow-md shadow-orange-300/60">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 text-white shadow-md shadow-cyan-300/60">
             <Sparkles size={18} />
           </span>
           <div>
@@ -56,7 +56,7 @@ const Navbar: React.FC = () => {
             <>
               <Link
                 to="/profile"
-                className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-amber-300"
+                className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-cyan-300"
               >
                 <UserRound size={16} />
                 {user?.first_name || user?.email || 'Profile'}
@@ -101,7 +101,7 @@ const Navbar: React.FC = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="border-t border-amber-100 bg-[#fffaf4] px-4 py-4 md:hidden"
+            className="border-t border-cyan-200 bg-[#f0fdfa] px-4 py-4 md:hidden"
           >
             <nav className="grid gap-2">
               {navItems.map((item) => (

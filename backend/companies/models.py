@@ -225,6 +225,23 @@ class Question(models.Model):
             models.Index(fields=["is_duplicate"]),
         ]
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.topic_tags:
+            tags = [t.strip() for t in self.topic_tags.split(",") if t.strip()]
+            for tag in tags:
+                topic = Topic.objects.filter(name__iexact=tag).first()
+                if not topic:
+                    try:
+                        topic, _ = Topic.objects.get_or_create(
+                            name=tag,
+                            defaults={"question_type": self.question_type}
+                        )
+                    except Exception:
+                        topic = Topic.objects.filter(name__iexact=tag).first()
+                if topic:
+                    self.topics.add(topic)
+
     def __str__(self):
         preview = self.interview_question
         return f"[{self.question_type}] {preview[:80]}..."

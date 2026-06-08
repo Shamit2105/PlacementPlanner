@@ -6,19 +6,19 @@
 
 @layer base {
   :root {
-    --bg-soft: #fffaf4;
-    --bg-accent: #ffedd5;
+    --bg-soft: #f0fdfa;
+    --bg-accent: #d4f9f4;
     --brand-ink: #1f2937;
-    --brand-coral: #f97316;
+    --brand-ocean: #0891b2;
     --brand-sky: #0ea5e9;
   }
 
   body {
     @apply font-sans antialiased text-slate-800;
     background:
-      radial-gradient(circle at 10% 20%, #fff3e6 0%, transparent 35%),
-      radial-gradient(circle at 90% 0%, #eaf8ff 0%, transparent 35%),
-      linear-gradient(180deg, #fffdf9 0%, #fff8f1 100%);
+      radial-gradient(circle at 10% 20%, #d4f9f4 0%, transparent 35%),
+      radial-gradient(circle at 90% 0%, #d4f1ff 0%, transparent 35%),
+      linear-gradient(180deg, #f0fdfa 0%, #ecf9ff 100%);
     min-height: 100vh;
   }
 
@@ -26,17 +26,17 @@
   h2,
   h3,
   h4 {
-    @apply font-display tracking-tight;
+    @apply font-display font-bold tracking-tight;
   }
 }
 
 @layer components {
   .surface {
-    @apply rounded-2xl border border-amber-100 bg-white/85 backdrop-blur-sm shadow-[0_12px_35px_-24px_rgba(251,146,60,0.6)];
+    @apply rounded-2xl border border-cyan-200 bg-white/85 backdrop-blur-sm shadow-[0_12px_35px_-24px_rgba(6,182,212,0.6)];
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-orange-600 via-amber-500 to-sky-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-cyan-600 via-teal-500 to-blue-500 bg-clip-text text-transparent;
   }
 
   .stagger-enter {
@@ -44,8 +44,8 @@
   }
 
   .ambient-grid {
-    background-image: linear-gradient(to right, rgba(251, 191, 36, 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(14, 165, 233, 0.06) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(6, 182, 212, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(13, 148, 136, 0.06) 1px, transparent 1px);
     background-size: 34px 34px;
   }
 }
@@ -71,12 +71,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #fb923c, #0ea5e9);
+  background: linear-gradient(to bottom, #06b6d4, #0891b2);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #f97316, #0284c7);
+  background: linear-gradient(to bottom, #0891b2, #0d9488);
 }
 
 /* Smooth animations */

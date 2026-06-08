@@ -120,7 +120,7 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, onClose, experien
                           </span>
                         )}
                         {question.toLowerCase().includes('array') || question.toLowerCase().includes('sum') && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-cyan-50 text-cyan-700 border border-cyan-200">
                             Array
                           </span>
                         )}
@@ -167,21 +167,21 @@ const QuestionModal: React.FC<QuestionModalProps> = ({ isOpen, onClose, experien
         )}
 
         {/* Study Tips */}
-        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
-          <h3 className="text-sm font-semibold text-yellow-800 flex items-center mb-2">
+        <div className="bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl p-4 border border-cyan-200">
+          <h3 className="text-sm font-semibold text-cyan-800 flex items-center mb-2">
             <GraduationCap size={16} className="mr-2" />
             Study Tips
           </h3>
           <ul className="space-y-2">
-            <li className="flex items-start text-sm text-yellow-700">
+            <li className="flex items-start text-sm text-cyan-700">
               <ChevronRight size={14} className="mr-2 mt-0.5 flex-shrink-0" />
               Practice these questions on LeetCode or similar platforms
             </li>
-            <li className="flex items-start text-sm text-yellow-700">
+            <li className="flex items-start text-sm text-cyan-700">
               <ChevronRight size={14} className="mr-2 mt-0.5 flex-shrink-0" />
               Focus on understanding the patterns rather than memorizing solutions
             </li>
-            <li className="flex items-start text-sm text-yellow-700">
+            <li className="flex items-start text-sm text-cyan-700">
               <ChevronRight size={14} className="mr-2 mt-0.5 flex-shrink-0" />
               Time yourself while solving to simulate interview conditions
             </li>

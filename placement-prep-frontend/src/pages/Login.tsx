@@ -46,7 +46,7 @@ const Login: React.FC = () => {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="email"
               required
-              className="w-full rounded-xl border border-amber-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-orange-200 focus:ring"
+              className="w-full rounded-xl border border-cyan-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-cyan-200 focus:ring"
             />
           </label>
 
@@ -58,7 +58,7 @@ const Login: React.FC = () => {
               onChange={(event) => setPassword(event.target.value)}
               placeholder="password"
               required
-              className="w-full rounded-xl border border-amber-200 bg-white py-2.5 pl-9 pr-9 text-sm outline-none ring-orange-200 focus:ring"
+              className="w-full rounded-xl border border-cyan-200 bg-white py-2.5 pl-9 pr-9 text-sm outline-none ring-cyan-200 focus:ring"
             />
             <button
               type="button"

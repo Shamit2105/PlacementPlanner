@@ -3,6 +3,7 @@ import { Search, Sparkles } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { companiesApi, questionsApi } from '../services/api';
 import { Company, QuestionListItem, QuestionType } from '../types';
+import QuestionDetailModal from '../components/experiences/QuestionDetailModal';
 
 const QUESTION_TYPES: QuestionType[] = ['DSA_CODING', 'DSA_THEORY', 'OS', 'DBMS', 'NETWORKS', 'SYSTEM_DESIGN'];
 
@@ -19,6 +20,8 @@ const Experiences: React.FC = () => {
   const [semanticResults, setSemanticResults] = useState<QuestionListItem[]>([]);
   const [semanticLoading, setSemanticLoading] = useState(false);
   const [semanticError, setSemanticError] = useState('');
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     const loadCompanies = async () => {
@@ -89,7 +92,7 @@ const Experiences: React.FC = () => {
                 setSearchInput(event.target.value);
               }}
               placeholder="Keyword search on interview question"
-              className="w-full rounded-xl border border-amber-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-orange-200 focus:ring"
+              className="w-full rounded-xl border border-cyan-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-cyan-200 focus:ring"
             />
           </label>
 
@@ -99,7 +102,7 @@ const Experiences: React.FC = () => {
               setPage(1);
               setSelectedType(event.target.value as QuestionType | '');
             }}
-            className="rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm outline-none ring-orange-200 focus:ring"
+            className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm outline-none ring-cyan-200 focus:ring"
           >
             <option value="">All types</option>
             {QUESTION_TYPES.map((type) => (
@@ -115,7 +118,7 @@ const Experiences: React.FC = () => {
               setPage(1);
               setSelectedCompany(event.target.value);
             }}
-            className="rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm outline-none ring-orange-200 focus:ring"
+            className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm outline-none ring-cyan-200 focus:ring"
           >
             <option value="">All companies</option>
             {companies.map((company) => (
@@ -137,9 +140,16 @@ const Experiences: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {questions.map((question) => (
-              <article key={question.id} className="rounded-xl border border-amber-100 bg-white p-4">
+              <article
+                key={question.id}
+                onClick={() => {
+                  setSelectedQuestionId(question.id);
+                  setIsDetailModalOpen(true);
+                }}
+                className="rounded-xl border border-cyan-200 bg-white p-4 hover:border-cyan-300 hover:shadow-md cursor-pointer transition-all duration-200"
+              >
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-800">
+                  <span className="rounded-full bg-cyan-100 px-2 py-1 font-semibold text-cyan-800">
                     {question.question_type_display}
                   </span>
                   <span className="rounded-full bg-sky-100 px-2 py-1 font-semibold text-sky-800">
@@ -158,7 +168,7 @@ const Experiences: React.FC = () => {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Prev
           </button>
@@ -167,7 +177,7 @@ const Experiences: React.FC = () => {
             type="button"
             disabled={!canNext}
             onClick={() => setPage((prev) => prev + 1)}
-            className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
           </button>
@@ -176,7 +186,7 @@ const Experiences: React.FC = () => {
 
       <section className="surface p-6">
         <div className="mb-4 flex items-center gap-2">
-          <Sparkles className="text-orange-500" size={18} />
+          <Sparkles className="text-teal-500" size={18} />
           <h2 className="text-xl text-slate-900">Semantic Search</h2>
         </div>
         <p className="text-sm text-slate-600">Uses /api/questions/semantic-search to find conceptually similar questions.</p>
@@ -185,7 +195,7 @@ const Experiences: React.FC = () => {
             value={semanticQuery}
             onChange={(event) => setSemanticQuery(event.target.value)}
             placeholder="Try: design a scalable cache invalidation strategy"
-            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm outline-none ring-orange-200 focus:ring"
+            className="w-full rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm outline-none ring-cyan-200 focus:ring"
           />
           <button
             type="button"
@@ -199,13 +209,26 @@ const Experiences: React.FC = () => {
         {semanticError && <p className="mt-2 text-sm font-semibold text-red-600">{semanticError}</p>}
         <div className="mt-4 space-y-3">
           {semanticResults.map((question) => (
-            <article key={`semantic-${question.id}`} className="rounded-xl border border-sky-200 bg-sky-50/40 p-4">
+            <article
+              key={`semantic-${question.id}`}
+              onClick={() => {
+                setSelectedQuestionId(question.id);
+                setIsDetailModalOpen(true);
+              }}
+              className="rounded-xl border border-sky-200 bg-sky-50/40 p-4 hover:border-sky-300 hover:shadow-md cursor-pointer transition-all duration-200"
+            >
               <p className="text-sm font-semibold text-slate-900">{question.interview_question}</p>
               <p className="mt-2 text-xs text-slate-600">Similarity: {(question.similarity_score || 0).toFixed(3)}</p>
             </article>
           ))}
         </div>
       </section>
+
+      <QuestionDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        questionId={selectedQuestionId}
+      />
     </div>
   );
 };

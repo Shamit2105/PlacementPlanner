@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { interviewsApi } from '../services/api';
 import { InterviewQuestion, InterviewSession, QuestionType } from '../types';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { MarkdownViewer } from '../components/experiences/QuestionDetailModal';
 
 const QUESTION_TYPES: QuestionType[] = ['DSA_CODING', 'DSA_THEORY', 'OS', 'DBMS', 'NETWORKS', 'SYSTEM_DESIGN'];
 
@@ -99,6 +100,44 @@ const Interviews: React.FC = () => {
     }
   };
 
+  const skipQuestion = async () => {
+    if (!activeSessionId || !nextQuestion) return;
+
+    setSubmitting(true);
+    setMessage('');
+    try {
+      const skipped = await interviewsApi.skipQuestion(activeSessionId, nextQuestion.order);
+      setNextQuestion(skipped);
+      setAnswer('');
+      setMessage('Question skipped. Fetch next question to continue.');
+      await loadSessions();
+    } catch {
+      setMessage('Failed to skip question.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const endInterview = async () => {
+    if (!activeSessionId) return;
+
+    if (!window.confirm('Are you sure you want to end this interview session early?')) return;
+
+    setSubmitting(true);
+    setMessage('');
+    try {
+      const endedSession = await interviewsApi.endSession(activeSessionId);
+      setNextQuestion(null);
+      setAnswer('');
+      setMessage('Interview ended early.');
+      await loadSessions();
+    } catch {
+      setMessage('Failed to end interview.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const toggleType = (type: QuestionType) => {
     setQuestionTypes((prev) => {
       if (prev.includes(type)) {
@@ -122,7 +161,7 @@ const Interviews: React.FC = () => {
             value={companySlug}
             onChange={(event) => setCompanySlug(event.target.value)}
             placeholder="company slug (optional)"
-            className="mt-4 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm outline-none ring-orange-200 focus:ring"
+            className="mt-4 w-full rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm outline-none ring-cyan-200 focus:ring"
           />
 
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -134,7 +173,7 @@ const Interviews: React.FC = () => {
                 className={`rounded-lg px-2 py-2 text-xs font-semibold ${
                   questionTypes.includes(type)
                     ? 'bg-slate-900 text-white'
-                    : 'border border-amber-200 bg-white text-slate-700'
+                    : 'border border-cyan-200 bg-white text-slate-700'
                 }`}
               >
                 {type}
@@ -149,7 +188,7 @@ const Interviews: React.FC = () => {
             max={20}
             value={totalQuestions}
             onChange={(event) => setTotalQuestions(Number(event.target.value))}
-            className="mt-1 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm outline-none ring-orange-200 focus:ring"
+            className="mt-1 w-full rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm outline-none ring-cyan-200 focus:ring"
           />
 
           <button
@@ -175,8 +214,8 @@ const Interviews: React.FC = () => {
                 }}
                 className={`w-full rounded-xl border px-3 py-2 text-left ${
                   activeSessionId === session.id
-                    ? 'border-sky-300 bg-sky-50'
-                    : 'border-amber-100 bg-white hover:border-amber-300'
+                    ? 'border-cyan-300 bg-cyan-50'
+                    : 'border-cyan-200 bg-white hover:border-cyan-300'
                 }`}
               >
                 <p className="text-sm font-semibold text-slate-800">Session #{session.id}</p>
@@ -192,18 +231,30 @@ const Interviews: React.FC = () => {
       <section className="surface p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-2xl text-slate-900">Active Session Workspace</h2>
-          <button
-            type="button"
-            onClick={fetchNext}
-            disabled={!activeSession || submitting}
-            className="rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
-          >
-            Get Next Question
-          </button>
+          <div className="flex items-center gap-2">
+            {activeSession && activeSession.status === 'IN_PROGRESS' && (
+              <button
+                type="button"
+                onClick={endInterview}
+                disabled={submitting}
+                className="rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-40 transition-colors"
+              >
+                End Interview
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={fetchNext}
+              disabled={!activeSession || activeSession.status !== 'IN_PROGRESS' || submitting}
+              className="rounded-xl border border-cyan-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40"
+            >
+              Get Next Question
+            </button>
+          </div>
         </div>
 
         {activeSession ? (
-          <div className="mt-4 rounded-xl border border-amber-100 bg-white p-4 text-sm text-slate-700">
+          <div className="mt-4 rounded-xl border border-cyan-200 bg-white p-4 text-sm text-slate-700">
             <p>Company: {activeSession.company_name || 'General pool'}</p>
             <p>Status: {activeSession.status}</p>
             <p>Score: {activeSession.total_score.toFixed(2)} / {activeSession.max_possible_score}</p>
@@ -219,24 +270,45 @@ const Interviews: React.FC = () => {
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-900">{nextQuestion.question_text}</p>
 
-            <textarea
-              value={answer}
-              onChange={(event) => setAnswer(event.target.value)}
-              className="mt-4 min-h-36 w-full rounded-xl border border-amber-200 bg-white p-3 text-sm outline-none ring-orange-200 focus:ring"
-              placeholder="Write your answer here"
-            />
+            {nextQuestion.status === 'PENDING' && (
+              <>
+                <textarea
+                  value={answer}
+                  onChange={(event) => setAnswer(event.target.value)}
+                  className="mt-4 min-h-36 w-full rounded-xl border border-cyan-200 bg-white p-3 text-sm outline-none ring-cyan-200 focus:ring"
+                  placeholder="Write your answer here"
+                />
 
-            <button
-              type="button"
-              onClick={submitAnswer}
-              disabled={submitting || !answer.trim()}
-              className="mt-3 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-            >
-              Submit Answer
-            </button>
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={submitAnswer}
+                    disabled={submitting || !answer.trim()}
+                    className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+                  >
+                    Submit Answer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={skipQuestion}
+                    disabled={submitting}
+                    className="rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 px-4 py-2.5 text-sm font-semibold text-amber-700 disabled:opacity-40 transition-colors"
+                  >
+                    Skip Question
+                  </button>
+                </div>
+              </>
+            )}
 
-            {nextQuestion.score !== null && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4">
+            {nextQuestion.status === 'SKIPPED' && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                <p className="text-sm font-semibold text-amber-900">Question Skipped</p>
+                <p className="mt-1 text-sm text-slate-600">You chose to skip this question. Fetch the next question to continue.</p>
+              </div>
+            )}
+
+            {nextQuestion.status === 'EVALUATED' && nextQuestion.score !== null && (
+              <div className="mt-4 rounded-xl border border-cyan-200 bg-white p-4">
                 <p className="text-sm font-semibold text-slate-900">Evaluation</p>
                 <p className="mt-1 text-sm text-slate-700">Score: {nextQuestion.score}/10 • Verdict: {nextQuestion.verdict}</p>
                 <p className="mt-2 text-sm text-slate-600">{nextQuestion.feedback}</p>
@@ -246,6 +318,89 @@ const Interviews: React.FC = () => {
         )}
 
         {message && <p className="mt-4 text-sm font-semibold text-orange-700">{message}</p>}
+
+        {activeSession && activeSession.status !== 'IN_PROGRESS' && (
+          <div className="mt-8 border-t border-slate-200 pt-6 space-y-6">
+            <h3 className="text-xl font-bold text-slate-900">
+              Session Review & Evaluation
+            </h3>
+            <div className="space-y-4">
+              {activeSession.questions && activeSession.questions.length > 0 ? (
+                activeSession.questions.map((q) => (
+                  <div key={q.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-800">Question {q.order}</span>
+                        <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-800">
+                          {q.question_type}
+                        </span>
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                          q.difficulty === 'EASY'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : q.difficulty === 'MEDIUM'
+                            ? 'bg-amber-50 border-amber-200 text-amber-800'
+                            : 'bg-rose-50 border-rose-200 text-rose-800'
+                        }`}>
+                          {q.difficulty}
+                        </span>
+                      </div>
+                      <div>
+                        {q.status === 'SKIPPED' ? (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                            Skipped
+                          </span>
+                        ) : q.status === 'EVALUATED' && q.score !== null ? (
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                            Grade: {q.score}/10
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">
+                            {q.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question Prompt</h4>
+                      <p className="text-sm font-semibold text-slate-900">{q.question_text}</p>
+                    </div>
+
+                    {q.status !== 'SKIPPED' && q.candidate_answer && (
+                      <div className="bg-slate-50 rounded-lg p-3.5 border border-slate-100">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Answer</h4>
+                        <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{q.candidate_answer}</p>
+                      </div>
+                    )}
+
+                    {q.status === 'EVALUATED' && (
+                      <div className="bg-emerald-50/30 rounded-lg p-3.5 border border-emerald-100/50 space-y-2">
+                        <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+                          Evaluation & Feedback
+                        </h4>
+                        <div className="text-sm text-slate-700 space-y-1.5">
+                          <p><strong className="text-slate-800">Verdict:</strong> {q.verdict}</p>
+                          <p><strong className="text-slate-800">Feedback:</strong> {q.feedback}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {q.reference_answer && (
+                      <div className="bg-indigo-50/20 rounded-lg p-3.5 border border-indigo-100/30">
+                        <h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-2">Reference Answer</h4>
+                        <div className="bg-white border border-slate-100 rounded-lg p-3.5 shadow-inner max-h-60 overflow-y-auto">
+                          <MarkdownViewer text={q.reference_answer} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500 italic">No questions associated with this session.</p>
+              )}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

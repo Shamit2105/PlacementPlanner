@@ -30,10 +30,10 @@ class QuestionFilter(django_filters.FilterSet):
         lookup_expr="iexact",
         label="Company (slug)",
     )
-    topic = filters.ModelChoiceFilter(
-        field_name="topics__id",
-        queryset=Topic.objects.all(),
-        label="Topic (id)",
+    topic = filters.CharFilter(
+        field_name="topics__name",
+        lookup_expr="iexact",
+        label="Topic (name)",
     )
 
     # Range filter for times_used (e.g. find popular questions)

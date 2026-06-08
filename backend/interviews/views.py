@@ -133,7 +133,11 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
             session.total_score = sum(scores) / len(scores)
         
         # Check if complete
-        if session.questions_answered >= session.total_questions:
+        pending_count = InterviewQuestion.objects.filter(
+            session=session,
+            status=InterviewQuestion.QuestionStatus.PENDING,
+        ).count()
+        if pending_count == 0:
             session.status = InterviewSession.SessionStatus.COMPLETED
             session.completed_at = timezone.now()
         
@@ -152,14 +156,86 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
         ).order_by("order").first()
         
         if not next_q:
-            # Check if session is complete
-            if session.questions_answered >= session.total_questions:
-                return Response(
-                    {"message": "Interview complete!", "session": InterviewSessionSerializer(session).data}
-                )
+            # Check if session needs completion
+            pending_count = InterviewQuestion.objects.filter(
+                session=session,
+                status=InterviewQuestion.QuestionStatus.PENDING,
+            ).count()
+            if pending_count == 0 and session.status == InterviewSession.SessionStatus.IN_PROGRESS:
+                session.status = InterviewSession.SessionStatus.COMPLETED
+                session.completed_at = timezone.now()
+                session.save()
+                
             return Response(
-                {"message": "No pending questions found"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"message": "Interview complete!", "session": InterviewSessionSerializer(session).data}
             )
         
         return Response(InterviewQuestionSerializer(next_q).data)
+
+    @action(detail=True, methods=["post"])
+    def skip_question(self, request, pk=None):
+        """
+        Skip a question.
+        
+        POST /api/interviews/{session_id}/skip_question/
+        {
+            "question_order": 1
+        }
+        """
+        session = self.get_object()
+        question_order = request.data.get("question_order")
+        if not question_order:
+            return Response(
+                {"error": "question_order is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+        interview_q = get_object_or_404(
+            InterviewQuestion,
+            session=session,
+            order=question_order,
+        )
+        
+        if interview_q.status != InterviewQuestion.QuestionStatus.PENDING:
+            return Response(
+                {"error": "Only pending questions can be skipped"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+            
+        interview_q.status = InterviewQuestion.QuestionStatus.SKIPPED
+        interview_q.save()
+        
+        # Check if complete
+        pending_count = InterviewQuestion.objects.filter(
+            session=session,
+            status=InterviewQuestion.QuestionStatus.PENDING,
+        ).count()
+        if pending_count == 0:
+            session.status = InterviewSession.SessionStatus.COMPLETED
+            session.completed_at = timezone.now()
+            
+        session.save()
+        
+        return Response(InterviewQuestionSerializer(interview_q).data)
+
+    @action(detail=True, methods=["post"])
+    def end_session(self, request, pk=None):
+        """
+        End the interview session early.
+        
+        POST /api/interviews/{session_id}/end_session/
+        """
+        session = self.get_object()
+        if session.status == InterviewSession.SessionStatus.IN_PROGRESS:
+            session.status = InterviewSession.SessionStatus.COMPLETED
+            session.completed_at = timezone.now()
+            
+            # Mark remaining pending questions as SKIPPED
+            InterviewQuestion.objects.filter(
+                session=session,
+                status=InterviewQuestion.QuestionStatus.PENDING,
+            ).update(status=InterviewQuestion.QuestionStatus.SKIPPED)
+            
+            session.save()
+            
+        return Response(InterviewSessionSerializer(session).data)

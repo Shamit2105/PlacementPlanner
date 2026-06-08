@@ -37,10 +37,10 @@ const Home: React.FC = () => {
   return (
     <div className="space-y-8">
       <section className="ambient-grid surface relative overflow-hidden p-8 sm:p-10">
-        <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-orange-200/50 blur-2xl" />
-        <div className="absolute -bottom-10 left-10 h-36 w-36 rounded-full bg-sky-200/50 blur-2xl" />
+        <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-teal-200/50 blur-2xl" />
+        <div className="absolute -bottom-10 left-10 h-36 w-36 rounded-full bg-cyan-200/50 blur-2xl" />
         <div className="relative z-10 max-w-3xl">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
             <Sparkle size={14} />
             Real backend. Real prep.
           </p>
@@ -56,7 +56,7 @@ const Home: React.FC = () => {
             </Link>
             <Link
               to="/ops"
-              className="rounded-xl border border-amber-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:border-amber-300"
+              className="rounded-xl border border-cyan-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:border-cyan-300"
             >
               Run Ops Lab
             </Link>
@@ -97,7 +97,7 @@ const Home: React.FC = () => {
               <Link
                 key={company.id}
                 to={`/companies/${company.id}`}
-                className="flex items-center justify-between rounded-xl border border-amber-100 bg-white p-3 hover:border-amber-300"
+                className="flex items-center justify-between rounded-xl border border-cyan-200 bg-white p-3 hover:border-cyan-300"
               >
                 <span className="inline-flex items-center gap-2 text-slate-800">
                   <Building2 size={16} className="text-sky-600" />
@@ -119,10 +119,10 @@ const Home: React.FC = () => {
           </div>
           <div className="space-y-3">
             {latestQuestions.map((question) => (
-              <div key={question.id} className="rounded-xl border border-amber-100 bg-white p-3">
+              <div key={question.id} className="rounded-xl border border-cyan-200 bg-white p-3">
                 <p className="line-clamp-2 text-sm font-semibold text-slate-800">{question.interview_question}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                  <span className="rounded-full bg-amber-100 px-2 py-1">{question.question_type_display}</span>
+                  <span className="rounded-full bg-cyan-100 px-2 py-1">{question.question_type_display}</span>
                   <span className="rounded-full bg-sky-100 px-2 py-1">{question.difficulty_display}</span>
                 </div>
               </div>
@@ -132,17 +132,17 @@ const Home: React.FC = () => {
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <Link to="/experiences" className="surface group p-5 hover:border-sky-300">
-          <Radar className="text-sky-600" />
+        <Link to="/experiences" className="surface group p-5 hover:border-cyan-300">
+          <Radar className="text-cyan-600" />
           <h3 className="mt-3 text-lg text-slate-900">Semantic Search</h3>
           <p className="mt-1 text-sm text-slate-600">Find related questions by intent, not exact keywords.</p>
         </Link>
-        <Link to="/interviews" className="surface group p-5 hover:border-amber-300">
-          <Rocket className="text-orange-600" />
+        <Link to="/interviews" className="surface group p-5 hover:border-teal-300">
+          <Rocket className="text-teal-600" />
           <h3 className="mt-3 text-lg text-slate-900">Mock Interviews</h3>
           <p className="mt-1 text-sm text-slate-600">Start sessions, answer live prompts, get scored feedback.</p>
         </Link>
-        <Link to="/ops" className="surface group p-5 hover:border-orange-300">
+        <Link to="/ops" className="surface group p-5 hover:border-cyan-300">
           <ScanSearch className="text-slate-700" />
           <h3 className="mt-3 text-lg text-slate-900">Ops Lab</h3>
           <p className="mt-1 text-sm text-slate-600">Trigger scrapers, monitor Celery task status, and manage metadata.</p>

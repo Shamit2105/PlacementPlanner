@@ -176,6 +176,18 @@ export const interviewsApi = {
     const response = await api.post(`/interviews/sessions/${id}/submit_answer/`, payload);
     return response.data;
   },
+
+  skipQuestion: async (id: number, questionOrder: number): Promise<InterviewQuestion> => {
+    const response = await api.post(`/interviews/sessions/${id}/skip_question/`, {
+      question_order: questionOrder,
+    });
+    return response.data;
+  },
+
+  endSession: async (id: number): Promise<InterviewSession> => {
+    const response = await api.post(`/interviews/sessions/${id}/end_session/`);
+    return response.data;
+  },
 };
 
 export const usersApi = {

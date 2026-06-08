@@ -46,7 +46,7 @@ const Companies: React.FC = () => {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className="w-full rounded-xl border border-amber-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-orange-200 focus:ring"
+              className="w-full rounded-xl border border-cyan-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none ring-cyan-200 focus:ring"
               placeholder="Search by company or slug"
             />
           </label>
@@ -58,14 +58,14 @@ const Companies: React.FC = () => {
           <Link
             to={`/companies/${company.id}`}
             key={company.id}
-            className="surface stagger-enter p-5 hover:border-amber-300"
+            className="surface stagger-enter p-5 hover:border-cyan-300"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="flex items-start justify-between">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-sky-500 text-white">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 text-white">
                 <Building2 size={18} />
               </span>
-              <span className="rounded-full bg-sky-100 px-2 py-1 text-[11px] font-semibold tracking-[0.12em] text-sky-800">
+              <span className="rounded-full bg-cyan-100 px-2 py-1 text-[11px] font-semibold tracking-[0.12em] text-cyan-800">
                 {company.slug}
               </span>
             </div>

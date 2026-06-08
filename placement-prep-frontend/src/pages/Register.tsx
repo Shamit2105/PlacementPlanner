@@ -62,14 +62,14 @@ const Register: React.FC = () => {
               onChange={(event) => onChange('first_name', event.target.value)}
               placeholder="First name"
               required
-              className="rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm"
+              className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm"
             />
             <input
               value={form.last_name}
               onChange={(event) => onChange('last_name', event.target.value)}
               placeholder="Last name"
               required
-              className="rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm"
+              className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm"
             />
           </div>
 
@@ -78,7 +78,7 @@ const Register: React.FC = () => {
             onChange={(event) => onChange('username', event.target.value)}
             placeholder="Username"
             required
-            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm"
           />
 
           <input
@@ -87,7 +87,7 @@ const Register: React.FC = () => {
             onChange={(event) => onChange('email', event.target.value)}
             placeholder="Email"
             required
-            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm"
           />
 
           <input
@@ -96,7 +96,7 @@ const Register: React.FC = () => {
             onChange={(event) => onChange('password', event.target.value)}
             placeholder="Password"
             required
-            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm"
           />
 
           <input
@@ -105,7 +105,7 @@ const Register: React.FC = () => {
             onChange={(event) => onChange('confirmPassword', event.target.value)}
             placeholder="Confirm password"
             required
-            className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-cyan-200 bg-white px-3 py-2.5 text-sm"
           />
 
           {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
