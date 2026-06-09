@@ -42,7 +42,7 @@ const Interviews: React.FC = () => {
 
   const startInterview = async () => {
     setSubmitting(true);
-    setMessage('');
+    setMessage('Generating questions and reference answers for your session... This might take up to a minute.');
     try {
       const started = await interviewsApi.startSession({
         company_slug: companySlug || undefined,
@@ -91,7 +91,7 @@ const Interviews: React.FC = () => {
       });
       setNextQuestion(evaluated);
       setAnswer('');
-      setMessage('Answer evaluated. Fetch next question to continue.');
+      setMessage('Answer submitted. Fetch next question to continue.');
       await loadSessions();
     } catch {
       setMessage('Failed to submit answer.');
@@ -321,9 +321,18 @@ const Interviews: React.FC = () => {
 
         {activeSession && activeSession.status !== 'IN_PROGRESS' && (
           <div className="mt-8 border-t border-slate-200 pt-6 space-y-6">
-            <h3 className="text-xl font-bold text-slate-900">
-              Session Review & Evaluation
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">
+                Session Review & Evaluation
+              </h3>
+              <button 
+                onClick={loadSessions} 
+                disabled={loading || submitting}
+                className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 disabled:opacity-50"
+              >
+                Refresh Status
+              </button>
+            </div>
             <div className="space-y-4">
               {activeSession.questions && activeSession.questions.length > 0 ? (
                 activeSession.questions.map((q) => (
@@ -352,6 +361,10 @@ const Interviews: React.FC = () => {
                         ) : q.status === 'EVALUATED' && q.score !== null ? (
                           <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
                             Grade: {q.score}/10
+                          </span>
+                        ) : q.status === 'ANSWERED' ? (
+                          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800 animate-pulse">
+                            Evaluating...
                           </span>
                         ) : (
                           <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">

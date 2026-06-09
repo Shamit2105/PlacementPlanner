@@ -12,7 +12,7 @@ from .serializers import (
     SubmitAnswerSerializer,
 )
 from .services import InterviewService
-
+from .tasks import evaluate_session_answers
 
 class InterviewSessionViewSet(viewsets.ModelViewSet):
     """CRUD for interview sessions."""
@@ -97,40 +97,12 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
         interview_q.status = InterviewQuestion.QuestionStatus.ANSWERED
         interview_q.save()
         
-        # Evaluate
-        service = InterviewService()
-        evaluation = service.evaluate_answer(
-            interview_question=interview_q.question.interview_question,
-            reference_answer=interview_q.question.interview_answer,
-            candidate_answer=data["candidate_answer"],
-            question_type=interview_q.question.question_type,
-        )
-        
-        # Save evaluation
-        interview_q.score = evaluation.get("score")
-        interview_q.verdict = evaluation.get("verdict")
-        interview_q.feedback = evaluation.get("feedback")
-        interview_q.strengths = evaluation.get("strengths", [])
-        interview_q.improvements = evaluation.get("improvements", [])
-        interview_q.missed_concepts = evaluation.get("missed_concepts", [])
-        interview_q.status = InterviewQuestion.QuestionStatus.EVALUATED
-        interview_q.evaluated_at = timezone.now()
-        interview_q.save()
-        
         # Update session progress
         session.questions_answered = InterviewQuestion.objects.filter(
             session=session,
-            status=InterviewQuestion.QuestionStatus.EVALUATED,
+            status__in=[InterviewQuestion.QuestionStatus.ANSWERED, InterviewQuestion.QuestionStatus.EVALUATED],
         ).count()
-        
-        # Calculate average score
-        scores = InterviewQuestion.objects.filter(
-            session=session,
-            score__isnull=False,
-        ).values_list("score", flat=True)
-        
-        if scores:
-            session.total_score = sum(scores) / len(scores)
+        session.save()
         
         # Check if complete
         pending_count = InterviewQuestion.objects.filter(
@@ -140,8 +112,8 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
         if pending_count == 0:
             session.status = InterviewSession.SessionStatus.COMPLETED
             session.completed_at = timezone.now()
-        
-        session.save()
+            session.save()
+            evaluate_session_answers.delay(session.id)
         
         return Response(InterviewQuestionSerializer(interview_q).data)
     
@@ -165,6 +137,7 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
                 session.status = InterviewSession.SessionStatus.COMPLETED
                 session.completed_at = timezone.now()
                 session.save()
+                evaluate_session_answers.delay(session.id)
                 
             return Response(
                 {"message": "Interview complete!", "session": InterviewSessionSerializer(session).data}
@@ -213,8 +186,10 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
         if pending_count == 0:
             session.status = InterviewSession.SessionStatus.COMPLETED
             session.completed_at = timezone.now()
-            
-        session.save()
+            session.save()
+            evaluate_session_answers.delay(session.id)
+        else:
+            session.save()
         
         return Response(InterviewQuestionSerializer(interview_q).data)
 
@@ -237,5 +212,6 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
             ).update(status=InterviewQuestion.QuestionStatus.SKIPPED)
             
             session.save()
+            evaluate_session_answers.delay(session.id)
             
         return Response(InterviewSessionSerializer(session).data)

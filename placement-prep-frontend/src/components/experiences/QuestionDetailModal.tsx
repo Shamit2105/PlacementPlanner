@@ -129,6 +129,7 @@ function parseInlineMarkdown(text: string): React.ReactNode[] {
 const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClose, questionId }) => {
   const [detail, setDetail] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -151,6 +152,21 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
       setDetail(null);
     }
   }, [isOpen, questionId]);
+
+  const handleGenerateAnswer = async () => {
+    if (!detail) return;
+    setGenerating(true);
+    setError('');
+    try {
+      const res = await questionsApi.generateAnswer(detail.id);
+      setDetail(prev => prev ? { ...prev, interview_answer: res.answer } : null);
+    } catch (err) {
+      setError('Failed to generate answer.');
+      console.error(err);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <Modal
@@ -265,7 +281,26 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
                 <MarkdownViewer text={detail.interview_answer} />
               </div>
             ) : (
-              <p className="text-sm text-slate-500 italic">No model answer provided.</p>
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-200 border-dashed rounded-xl space-y-4">
+                <p className="text-sm text-slate-500 italic">No model answer provided yet.</p>
+                <button
+                  onClick={handleGenerateAnswer}
+                  disabled={generating}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Code size={16} />
+                      Generate Reference Answer
+                    </>
+                  )}
+                </button>
+              </div>
             )}
           </div>
         </div>

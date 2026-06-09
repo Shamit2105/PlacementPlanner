@@ -15,6 +15,7 @@ urlpatterns = [
     # ── Question bank CRUD ────────────────────────────────────────────────────
     path("", views.QuestionListCreateView.as_view(), name="question-list"),
     path("<int:pk>/", views.QuestionDetailView.as_view(), name="question-detail"),
+    path("<int:pk>/generate-answer/", views.GenerateAnswerView.as_view(), name="generate-answer"),
     path("<int:pk>/similar/", views.SimilarQuestionsView.as_view(), name="similar-questions"),
 
     # ── Vector / Semantic ─────────────────────────────────────────────────────

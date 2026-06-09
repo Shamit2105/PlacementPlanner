@@ -22,14 +22,6 @@ class InterviewService:
         count: int = 5,
         exclude_ids: list | None = None,
     ) -> list:
-        """
-        Select questions for an interview session.
-        
-        Strategy:
-        1. Filter by company + question types
-        2. Prioritize questions that haven't been used much
-        3. Mix difficulties (30% Easy, 50% Medium, 20% Hard)
-        """
         question_types = question_types or ["DSA_CODING"]
         
         qs = Question.objects.filter(
@@ -43,38 +35,61 @@ class InterviewService:
         
         if exclude_ids:
             qs = qs.exclude(pk__in=exclude_ids)
+            
+        selected = list(qs.order_by('?')[:count])
         
-        # Mix by difficulty
-        easy_count = max(1, int(count * 0.3))
-        medium_count = max(1, int(count * 0.5))
-        hard_count = count - easy_count - medium_count
-        
-        selected = []
-        
-        # Get random questions by difficulty
-        easy_qs = list(qs.filter(difficulty="EASY").order_by('?')[:easy_count])
-        medium_qs = list(qs.filter(difficulty="MEDIUM").order_by('?')[:medium_count])
-        hard_qs = list(qs.filter(difficulty="HARD").order_by('?')[:hard_count])
-        
-        selected = easy_qs + medium_qs + hard_qs
-        
-        # Fill remaining if not enough in certain difficulties
         if len(selected) < count:
-            remaining = list(
-                qs.exclude(pk__in=[q.pk for q in selected])
-                  .order_by('?')[:count - len(selected)]
-            )
-            selected.extend(remaining)
+            shortfall = count - len(selected)
+            logger.info(f"Not enough questions in DB (found {len(selected)}, need {count}). Generating {shortfall} new questions...")
+            
+            existing_texts = list(qs.values_list("interview_question", flat=True)[:50])
+            import random
+            from companies.models import QuestionSource
+            
+            for i in range(shortfall):
+                qtype = random.choice(question_types)
+                try:
+                    result = self.llm.generate_unique_question(
+                        question_type=qtype,
+                        company=company_slug.replace('-', ' ') if company_slug else "",
+                        topic="",
+                        existing_questions=existing_texts,
+                    )
+                    
+                    q = Question.objects.create(
+                        raw_source=None,
+                        interview_question=result.get("question", ""),
+                        interview_answer=result.get("answer", ""),
+                        question_type=qtype,
+                        difficulty=result.get("difficulty", "Medium").upper() if result.get("difficulty") else "MEDIUM",
+                        source=QuestionSource.GENERATED,
+                        status=ProcessingStatus.PROCESSED,
+                        topic_tags=",".join(result.get("topic_tags", [])) if result.get("topic_tags") else "",
+                    )
+                    
+                    if company_slug:
+                        company_obj = Company.objects.filter(slug=company_slug).first()
+                        if company_obj:
+                            q.companies.add(company_obj)
+                            
+                    selected.append(q)
+                    existing_texts.append(result.get("question", ""))
+                    logger.info(f"Generated new question: {q.pk}")
+                except Exception as e:
+                    logger.error(f"Failed to generate unique question: {e}")
+                    
+        for q in selected:
+            if not q.interview_answer:
+                logger.info(f"Generating missing reference answer for Question {q.pk} before starting interview...")
+                try:
+                    ans = self.llm.generate_answer(q.interview_question, q.question_type)
+                    q.interview_answer = ans
+                    q.save(update_fields=["interview_answer"])
+                except Exception as e:
+                    logger.error(f"Failed to generate answer for Question {q.pk}: {e}")
         
-        logger.info(
-            "Selected %d questions (Easy:%d, Medium:%d, Hard:%d) for company=%s",
-            len(selected),
-            len([q for q in selected if q.difficulty == "EASY"]),
-            len([q for q in selected if q.difficulty == "MEDIUM"]),
-            len([q for q in selected if q.difficulty == "HARD"]),
-            company_slug,
-        )
-        
+        import random
+        random.shuffle(selected)
         return selected[:count]
     
     def evaluate_answer(

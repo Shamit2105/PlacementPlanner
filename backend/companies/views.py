@@ -138,6 +138,30 @@ class QuestionDetailView(generics.RetrieveDestroyAPIView):
     queryset         = Question.objects.prefetch_related("companies", "topics")
     serializer_class = QuestionDetailSerializer
 
+class GenerateAnswerView(APIView):
+    """
+    POST /questions/<id>/generate-answer/
+    Generates an interview_answer for a question if it doesn't exist.
+    """
+    def post(self, request, pk):
+        try:
+            question = Question.objects.get(pk=pk)
+        except Question.DoesNotExist:
+            return Response({"error": "Question not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if question.interview_answer:
+            return Response({"message": "Answer already exists.", "answer": question.interview_answer})
+
+        try:
+            llm = LLMService()
+            ans = llm.generate_answer(question.interview_question, question.question_type)
+            question.interview_answer = ans
+            question.save(update_fields=["interview_answer"])
+            return Response({"message": "Answer generated.", "answer": ans})
+        except Exception as e:
+            logger.error(f"Failed to generate answer for Question {pk}: {e}")
+            return Response({"error": "Failed to generate answer."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # ─── Semantic Search ──────────────────────────────────────────────────────────
 

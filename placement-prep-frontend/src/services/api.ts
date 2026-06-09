@@ -106,6 +106,11 @@ export const questionsApi = {
     return response.data;
   },
 
+  generateAnswer: async (id: number): Promise<{ message: string; answer: string }> => {
+    const response = await api.post(`/questions/${id}/generate-answer/`);
+    return response.data;
+  },
+
   semanticSearch: async (payload: SemanticSearchPayload): Promise<{ count: number; results: QuestionListItem[] }> => {
     const response = await api.post('/questions/semantic-search/', payload);
     return response.data;

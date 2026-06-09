@@ -269,24 +269,30 @@ class LLMService:
         """Judge a candidate's answer against the reference answer."""
         
         eval_prompt = ChatPromptTemplate.from_messages([
-            SystemMessage(content="You are a strict but fair technical interviewer evaluating a candidate's answer. Respond ONLY in valid JSON."),
-            HumanMessage(content="""Question: {interview_question}
+            SystemMessage(content="You are a strict but fair technical interviewer evaluating a candidate's answer. "
+                                  "You MUST ground your evaluation strictly in the provided Question and Reference Answer. "
+                                  "Do NOT hallucinate or assume topics (e.g., do not mention linked lists or other concepts if they are not in the question). "
+                                  "Respond ONLY in valid JSON."),
+            HumanMessage(content="""Evaluate the Candidate's Answer against the Reference Answer for the following Question.
 
-    Reference Answer (ideal):
-    {reference_answer}
+=== QUESTION ===
+{interview_question}
 
-    Candidate's Answer:
-    {candidate_answer}
+=== REFERENCE ANSWER (IDEAL) ===
+{reference_answer}
 
-    Evaluate and respond in this exact JSON format:
-    {{
-    "score": <integer 0-10>,
-    "verdict": "<Strong|Acceptable|Needs Work>",
-    "feedback": "<2-3 sentence overall assessment>",
-    "strengths": ["<point 1>", "<point 2>"],
-    "improvements": ["<gap 1>", "<gap 2>"],
-    "missed_concepts": ["<concept they didn't mention>"]
-    }}""")
+=== CANDIDATE'S ANSWER ===
+{candidate_answer}
+
+Based STRICTLY on the text above, evaluate and respond in this exact JSON format:
+{{
+"score": <integer 0-10>,
+"verdict": "<Strong|Acceptable|Needs Work>",
+"feedback": "<2-3 sentence overall assessment grounded ONLY in the candidate's actual answer compared to the reference>",
+"strengths": ["<point 1>", "<point 2>"],
+"improvements": ["<gap 1>", "<gap 2>"],
+"missed_concepts": ["<concept they didn't mention>"]
+}}""")
         ])
         
         eval_chain = eval_prompt | self.llm | self.json_parser
