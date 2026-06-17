@@ -243,7 +243,13 @@ class SimilarQuestionsView(APIView):
         limit = int(request.query_params.get("limit", 5))
         vs      = VectorService()
         results = vs.get_similar_questions(question_id=pk, limit=limit)
-        data    = QuestionListSerializer(results, many=True).data
+        
+        data = []
+        for q in results:
+            q_data = QuestionListSerializer(q).data
+            q_data["similarity_score"] = round(1 - getattr(q, "distance", 1.0), 4)
+            data.append(q_data)
+            
         return Response({"count": len(data), "results": data})
 
 

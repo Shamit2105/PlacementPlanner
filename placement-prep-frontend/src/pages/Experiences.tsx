@@ -228,6 +228,7 @@ const Experiences: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         questionId={selectedQuestionId}
+        onSelectSimilar={(id) => setSelectedQuestionId(id)}
       />
     </div>
   );

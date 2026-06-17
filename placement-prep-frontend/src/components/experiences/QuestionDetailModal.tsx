@@ -8,16 +8,18 @@ import {
   Tag, 
   Award,
   ExternalLink,
-  Code
+  Code,
+  Sparkles
 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { questionsApi } from '../../services/api';
-import { QuestionDetail } from '../../types';
+import { QuestionDetail, QuestionListItem } from '../../types';
 
 interface QuestionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   questionId: number | null;
+  onSelectSimilar?: (id: number) => void;
 }
 
 // Markdown parser helper for formatting inline and block markdown elements
@@ -126,11 +128,15 @@ function parseInlineMarkdown(text: string): React.ReactNode[] {
   });
 }
 
-const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClose, questionId }) => {
+const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClose, questionId, onSelectSimilar }) => {
   const [detail, setDetail] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
+  
+  const [similarQuestions, setSimilarQuestions] = useState<QuestionListItem[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [errorSimilar, setErrorSimilar] = useState('');
 
   useEffect(() => {
     if (isOpen && questionId !== null) {
@@ -140,6 +146,19 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
         try {
           const res = await questionsApi.getById(questionId);
           setDetail(res);
+          
+          // Fetch similar questions
+          setLoadingSimilar(true);
+          setErrorSimilar('');
+          try {
+            const similarRes = await questionsApi.getSimilar(questionId);
+            setSimilarQuestions(similarRes.results);
+          } catch (simErr) {
+            setErrorSimilar('Failed to load similar questions.');
+            console.error(simErr);
+          } finally {
+            setLoadingSimilar(false);
+          }
         } catch (err) {
           setError('Failed to load question details.');
           console.error(err);
@@ -150,6 +169,8 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
       fetchDetail();
     } else {
       setDetail(null);
+      setSimilarQuestions([]);
+      setErrorSimilar('');
     }
   }, [isOpen, questionId]);
 
@@ -301,6 +322,52 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
                   )}
                 </button>
               </div>
+            )}
+          </div>
+
+          {/* Similar Questions Section */}
+          <div className="border-t border-slate-100 pt-5">
+            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-3">
+              <Sparkles size={18} className="text-teal-600" />
+              Similar Questions
+            </h4>
+            {loadingSimilar ? (
+              <div className="flex flex-col items-center justify-center py-6 space-y-2">
+                <Loader2 className="animate-spin text-teal-600" size={24} />
+                <p className="text-xs text-slate-500">Finding similar questions...</p>
+              </div>
+            ) : errorSimilar ? (
+              <p className="text-sm text-rose-600">{errorSimilar}</p>
+            ) : similarQuestions && similarQuestions.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {similarQuestions.map((sq) => (
+                  <div
+                    key={sq.id}
+                    onClick={() => {
+                      if (onSelectSimilar) {
+                        onSelectSimilar(sq.id);
+                      }
+                    }}
+                    className={`rounded-xl border border-teal-100 bg-teal-50/30 p-3 hover:border-teal-300 hover:shadow-sm transition-all duration-200 ${onSelectSimilar ? 'cursor-pointer' : ''}`}
+                  >
+                    <p className="text-sm font-medium text-slate-900 line-clamp-2 mb-2">
+                      {sq.interview_question}
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="rounded bg-teal-100 px-1.5 py-0.5 font-semibold text-teal-800">
+                        {sq.question_type_display}
+                      </span>
+                      {sq.similarity_score !== undefined && (
+                        <span className="text-teal-700 font-medium">
+                          Sim: {sq.similarity_score.toFixed(3)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 italic">No similar questions found.</p>
             )}
           </div>
         </div>
