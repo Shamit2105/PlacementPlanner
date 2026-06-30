@@ -14,6 +14,9 @@ from .serializers import (
 from .services import InterviewService
 from .tasks import evaluate_session_answers
 
+import logging
+logger = logging.getLogger(__name__)
+
 class InterviewSessionViewSet(viewsets.ModelViewSet):
     """CRUD for interview sessions."""
     serializer_class = InterviewSessionSerializer
@@ -47,20 +50,22 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
             question_types=data.get("question_types", ["DSA_CODING"]),
         )
         
-        # Select questions
+        # Select the first EASY question to start the interview
         service = InterviewService()
         questions = service.select_questions(
             company_slug=data.get("company_slug", ""),
             question_types=session.question_types,
-            count=session.total_questions,
+            count=1,
+            difficulty="EASY",
+            user=request.user,
         )
-        
-        # Create interview questions
-        for i, question in enumerate(questions, 1):
+
+        # Create the initial interview question with order 1
+        if questions:
             InterviewQuestion.objects.create(
                 session=session,
-                question=question,
-                order=i,
+                question=questions[0],
+                order=1,
             )
         
         return Response(
@@ -96,24 +101,84 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
         interview_q.candidate_answer = data["candidate_answer"]
         interview_q.status = InterviewQuestion.QuestionStatus.ANSWERED
         interview_q.save()
+
+        # Immediate evaluation of the answer
+        service = InterviewService()
+        evaluation = service.evaluate_answer(
+            interview_question=interview_q.question.interview_question,
+            reference_answer=interview_q.question.interview_answer,
+            candidate_answer=interview_q.candidate_answer,
+            question_type=interview_q.question.question_type,
+        )
+        # Update interview question with evaluation results
+        interview_q.score = evaluation.get("score")
+        interview_q.verdict = evaluation.get("verdict")
+        interview_q.feedback = evaluation.get("feedback")
+        interview_q.strengths = evaluation.get("strengths", [])
+        interview_q.improvements = evaluation.get("improvements", [])
+        interview_q.missed_concepts = evaluation.get("missed_concepts", [])
+        interview_q.status = InterviewQuestion.QuestionStatus.EVALUATED
+        interview_q.save()
+
+        # Update user profile with question stats
+        if hasattr(request.user, "profile"):
+            request.user.profile.questions_attempted.add(interview_q.question)
+            if interview_q.score is not None and interview_q.score >= 7:
+                request.user.profile.questions_passed.add(interview_q.question)
+            else:
+                request.user.profile.questions_failed.add(interview_q.question)
+
+        # Determine next difficulty based on score (simple threshold)
+        current_difficulty = interview_q.question.difficulty.upper() if hasattr(interview_q.question, "difficulty") else None
+        next_difficulty = current_difficulty
+        if interview_q.score is not None:
+            if interview_q.score >= 7:
+                # Progress to higher difficulty if possible
+                if current_difficulty == "EASY":
+                    next_difficulty = "MEDIUM"
+                elif current_difficulty == "MEDIUM":
+                    next_difficulty = "HARD"
+                else:
+                    next_difficulty = "HARD"
+            else:
+                # If low score, stay on same difficulty or focus on topic (e.g., OS)
+                next_difficulty = current_difficulty
         
-        # Update session progress
-        session.questions_answered = InterviewQuestion.objects.filter(
-            session=session,
-            status__in=[InterviewQuestion.QuestionStatus.ANSWERED, InterviewQuestion.QuestionStatus.EVALUATED],
-        ).count()
-        session.save()
+        # Check current count of created questions
+        created_count = InterviewQuestion.objects.filter(session=session).count()
         
-        # Check if complete
-        pending_count = InterviewQuestion.objects.filter(
-            session=session,
-            status=InterviewQuestion.QuestionStatus.PENDING,
-        ).count()
-        if pending_count == 0:
-            session.status = InterviewSession.SessionStatus.COMPLETED
-            session.completed_at = timezone.now()
-            session.save()
-            evaluate_session_answers.delay(session.id)
+        if created_count < session.total_questions:
+            # Create next question with adaptive difficulty
+            next_order = interview_q.order + 1
+            existing_q_ids = list(InterviewQuestion.objects.filter(session=session).values_list("question_id", flat=True))
+            next_qs = service.select_questions(
+                company_slug=session.company.slug if hasattr(session, "company") and session.company else "",
+                question_types=session.question_types,
+                count=1,
+                difficulty=next_difficulty,
+                exclude_ids=existing_q_ids,
+                user=request.user,
+            )
+            if next_qs:
+                InterviewQuestion.objects.create(
+                    session=session,
+                    question=next_qs[0],
+                    order=next_order,
+                )
+        else:
+            # All questions generated, check if session is complete
+            pending_count = InterviewQuestion.objects.filter(
+                session=session,
+                status=InterviewQuestion.QuestionStatus.PENDING,
+            ).count()
+            if pending_count == 0:
+                session.status = InterviewSession.SessionStatus.COMPLETED
+                session.completed_at = timezone.now()
+                session.save()
+                try:
+                    evaluate_session_answers.delay(session.id)
+                except Exception as e:
+                    logger.error(f"Failed to trigger evaluation task for session {session.id}: {e}")
         
         return Response(InterviewQuestionSerializer(interview_q).data)
     
@@ -137,7 +202,10 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
                 session.status = InterviewSession.SessionStatus.COMPLETED
                 session.completed_at = timezone.now()
                 session.save()
-                evaluate_session_answers.delay(session.id)
+                try:
+                    evaluate_session_answers.delay(session.id)
+                except Exception as e:
+                    logger.error(f"Failed to trigger evaluation task for session {session.id}: {e}")
                 
             return Response(
                 {"message": "Interview complete!", "session": InterviewSessionSerializer(session).data}
@@ -178,18 +246,46 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
         interview_q.status = InterviewQuestion.QuestionStatus.SKIPPED
         interview_q.save()
         
-        # Check if complete
-        pending_count = InterviewQuestion.objects.filter(
-            session=session,
-            status=InterviewQuestion.QuestionStatus.PENDING,
-        ).count()
-        if pending_count == 0:
-            session.status = InterviewSession.SessionStatus.COMPLETED
-            session.completed_at = timezone.now()
-            session.save()
-            evaluate_session_answers.delay(session.id)
+        # Check current count of created questions
+        created_count = InterviewQuestion.objects.filter(session=session).count()
+        
+        if created_count < session.total_questions:
+            # Create next question with the same difficulty
+            service = InterviewService()
+            next_order = interview_q.order + 1
+            existing_q_ids = list(InterviewQuestion.objects.filter(session=session).values_list("question_id", flat=True))
+            current_difficulty = interview_q.question.difficulty.upper() if hasattr(interview_q.question, "difficulty") else "EASY"
+            
+            next_qs = service.select_questions(
+                company_slug=session.company.slug if hasattr(session, "company") and session.company else "",
+                question_types=session.question_types,
+                count=1,
+                difficulty=current_difficulty,
+                exclude_ids=existing_q_ids,
+                user=request.user,
+            )
+            if next_qs:
+                InterviewQuestion.objects.create(
+                    session=session,
+                    question=next_qs[0],
+                    order=next_order,
+                )
         else:
-            session.save()
+            # All questions generated, check if session is complete
+            pending_count = InterviewQuestion.objects.filter(
+                session=session,
+                status=InterviewQuestion.QuestionStatus.PENDING,
+            ).count()
+            if pending_count == 0:
+                session.status = InterviewSession.SessionStatus.COMPLETED
+                session.completed_at = timezone.now()
+                session.save()
+                try:
+                    evaluate_session_answers.delay(session.id)
+                except Exception as e:
+                    logger.error(f"Failed to trigger evaluation task for session {session.id}: {e}")
+            else:
+                session.save()
         
         return Response(InterviewQuestionSerializer(interview_q).data)
 
@@ -212,6 +308,9 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
             ).update(status=InterviewQuestion.QuestionStatus.SKIPPED)
             
             session.save()
-            evaluate_session_answers.delay(session.id)
+            try:
+                evaluate_session_answers.delay(session.id)
+            except Exception as e:
+                logger.error(f"Failed to trigger evaluation task for session {session.id}: {e}")
             
         return Response(InterviewSessionSerializer(session).data)

@@ -1,8 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
-from base.models import AbstractBaseModel
 
+from base.models import AbstractBaseModel
+from companies.models import Question
 class User(AbstractUser, AbstractBaseModel):
     middle_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(_('email address'), unique=True)
@@ -22,7 +23,9 @@ class UserProfile(AbstractBaseModel):
     target_role = models.CharField(max_length=100, default="Software Engineer", help_text=_("Target Placement Role"))
     batch_year = models.IntegerField(null=True, blank=True, help_text=_("Graduation Year"))
     
-    
+    questions_attempted = models.ManyToManyField(Question, related_name='users_attempted', blank=True)
+    questions_passed = models.ManyToManyField(Question, related_name='users_passed', blank=True)
+    questions_failed = models.ManyToManyField(Question, related_name='users_failed', blank=True)
 
     def __str__(self):
         return f"Profile: {self.user.email}"

@@ -19,9 +19,12 @@ class InterviewService:
         self,
         company_slug: str = "",
         question_types: list | None = None,
-        count: int = 5,
+        count: int = 1,
         exclude_ids: list | None = None,
+        difficulty: str | None = None,
+        user=None,
     ) -> list:
+        # Default to DSA_CODING if not provided
         question_types = question_types or ["DSA_CODING"]
         
         qs = Question.objects.filter(
@@ -36,48 +39,45 @@ class InterviewService:
         if exclude_ids:
             qs = qs.exclude(pk__in=exclude_ids)
             
+        if user and hasattr(user, 'profile'):
+            passed_q_ids = user.profile.questions_passed.values_list('id', flat=True)
+            if passed_q_ids:
+                qs = qs.exclude(pk__in=passed_q_ids)
+        
+        if difficulty:
+            # Assume Difficulty enum values are upper case strings like "EASY", "MEDIUM", "HARD"
+            qs = qs.filter(difficulty=difficulty.upper())
+        
         selected = list(qs.order_by('?')[:count])
         
-        if len(selected) < count:
+        # If not enough questions of the requested difficulty, fall back to any difficulty
+        if len(selected) < count and difficulty:
             shortfall = count - len(selected)
-            logger.info(f"Not enough questions in DB (found {len(selected)}, need {count}). Generating {shortfall} new questions...")
-            
-            existing_texts = list(qs.values_list("interview_question", flat=True)[:50])
-            import random
-            from companies.models import QuestionSource
-            
-            for i in range(shortfall):
-                qtype = random.choice(question_types)
-                try:
-                    result = self.llm.generate_unique_question(
-                        question_type=qtype,
-                        company=company_slug.replace('-', ' ') if company_slug else "",
-                        topic="",
-                        existing_questions=existing_texts,
-                    )
-                    
-                    q = Question.objects.create(
-                        raw_source=None,
-                        interview_question=result.get("question", ""),
-                        interview_answer=result.get("answer", ""),
-                        question_type=qtype,
-                        difficulty=result.get("difficulty", "Medium").upper() if result.get("difficulty") else "MEDIUM",
-                        source=QuestionSource.GENERATED,
-                        status=ProcessingStatus.PROCESSED,
-                        topic_tags=",".join(result.get("topic_tags", [])) if result.get("topic_tags") else "",
-                    )
-                    
-                    if company_slug:
-                        company_obj = Company.objects.filter(slug=company_slug).first()
-                        if company_obj:
-                            q.companies.add(company_obj)
-                            
-                    selected.append(q)
-                    existing_texts.append(result.get("question", ""))
-                    logger.info(f"Generated new question: {q.pk}")
-                except Exception as e:
-                    logger.error(f"Failed to generate unique question: {e}")
-                    
+            logger.info(f"Not enough questions for difficulty {difficulty}, filling with any difficulty ({shortfall} more).")
+            # Re‑query without difficulty filter, excluding already selected ids
+            existing_ids = [q.id for q in selected]
+            filler_qs = Question.objects.filter(
+                status=ProcessingStatus.PROCESSED,
+                is_duplicate=False,
+                question_type__in=question_types,
+            )
+            if company_slug:
+                filler_qs = filler_qs.filter(companies__slug=company_slug)
+            if exclude_ids:
+                filler_qs = filler_qs.exclude(pk__in=exclude_ids)
+            if user and hasattr(user, 'profile'):
+                passed_q_ids = user.profile.questions_passed.values_list('id', flat=True)
+                if passed_q_ids:
+                    filler_qs = filler_qs.exclude(pk__in=passed_q_ids)
+            if existing_ids:
+                filler_qs = filler_qs.exclude(pk__in=existing_ids)
+            filler = list(filler_qs.order_by('?')[:shortfall])
+            selected.extend(filler)
+        
+        # Ensure we have the desired count
+        selected = selected[:count]
+        
+        # Generate missing reference answers if needed
         for q in selected:
             if not q.interview_answer:
                 logger.info(f"Generating missing reference answer for Question {q.pk} before starting interview...")
@@ -88,9 +88,10 @@ class InterviewService:
                 except Exception as e:
                     logger.error(f"Failed to generate answer for Question {q.pk}: {e}")
         
+        # Shuffle to avoid deterministic ordering
         import random
         random.shuffle(selected)
-        return selected[:count]
+        return selected
     
     def evaluate_answer(
         self,
