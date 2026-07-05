@@ -13,7 +13,7 @@ const OpsLab: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [newCompany, setNewCompany] = useState({ name: '', slug: '' });
   const [newTopic, setNewTopic] = useState({ name: '', question_type: 'DSA_CODING' as QuestionType });
-  const [scrapeForm, setScrapeForm] = useState<ScrapeRequestPayload>({ question_type: 'DSA_CODING', target_count: 10 });
+  const [scrapeForm, setScrapeForm] = useState<ScrapeRequestPayload>({ target_count: 10 });
   const [message, setMessage] = useState('');
 
   const load = async () => {
@@ -57,7 +57,7 @@ const OpsLab: React.FC = () => {
     try {
       const response = await questionsApi.triggerScrape(scrapeForm);
       setTaskId(response.task_id);
-      setMessage(`Scrape queued: ${response.task_id}`);
+      setMessage(`Scrape queued: ${response.scope}. Task: ${response.task_id}`);
     } catch {
       setMessage('Scrape trigger failed.');
     }
@@ -176,12 +176,20 @@ const OpsLab: React.FC = () => {
 
       <section className="surface p-5">
         <h2 className="text-xl text-slate-900">Scrape & Task Polling</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          The optional focus helps find relevant pages. Every supported question type found on each page will be saved.
+        </p>
         <div className="mt-3 grid gap-3 md:grid-cols-4">
           <select
-            value={scrapeForm.question_type}
-            onChange={(event) => setScrapeForm((prev) => ({ ...prev, question_type: event.target.value as QuestionType }))}
+            value={scrapeForm.question_type || ''}
+            onChange={(event) => setScrapeForm((prev) => ({
+              ...prev,
+              question_type: event.target.value ? event.target.value as QuestionType : undefined,
+            }))}
             className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm"
+            aria-label="Optional question type search focus"
           >
+            <option value="">All topics (recommended)</option>
             {QUESTION_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type}

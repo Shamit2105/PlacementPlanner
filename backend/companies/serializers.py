@@ -1,16 +1,4 @@
-"""
-Questions App — Serializers
-=============================
-DRF serializers handle:
-  • Serializing Question / Company / Topic queryset → JSON response
-  • Validating incoming data for write operations
 
-Design notes:
-  • embedding field is EXCLUDED from all serializers (768 floats = ~6KB per question)
-    Use the dedicated /api/v1/questions/semantic-search/ endpoint instead.
-  • question_text (raw scraped) is hidden from list endpoints — clients
-    only need interview_question (clean) and interview_answer (formatted).
-"""
 
 from rest_framework import serializers
 from .models import Question, Company, Topic, QuestionType, Difficulty
@@ -182,7 +170,15 @@ class ScrapeRequestSerializer(serializers.Serializer):
     Input for the /questions/scrape/ endpoint.
     Triggers the scrape_and_ingest_questions Celery task.
     """
-    question_type = serializers.ChoiceField(choices=QuestionType.choices)
+    question_type = serializers.ChoiceField(
+        choices=QuestionType.choices,
+        required=False,
+        allow_blank=True,
+        help_text=(
+            "Optional search focus. All question types found on each page "
+            "will still be saved."
+        ),
+    )
     company_name  = serializers.CharField(max_length=120, required=False, allow_blank=True)
     topic_name    = serializers.CharField(max_length=120, required=False, allow_blank=True)
     target_count  = serializers.IntegerField(min_value=1, max_value=50, default=10)

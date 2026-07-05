@@ -4,7 +4,7 @@ services:
     container_name: placement_redis
     restart: always
     ports:
-      - "6378:6378"
+      - "6378:6379"
 
   web:
     build: .

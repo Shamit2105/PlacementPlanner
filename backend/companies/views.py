@@ -1,27 +1,3 @@
-"""
-Questions App — Views
-=======================
-REST API endpoints for the question bank.
-
-Endpoints:
-  GET    /api/v1/questions/                → paginated list with filters
-  POST   /api/v1/questions/                → manually add a question
-  GET    /api/v1/questions/<id>/           → full detail with reference answer
-  DELETE /api/v1/questions/<id>/           → remove question
-  POST   /api/v1/questions/semantic-search/ → vector similarity search
-  POST   /api/v1/questions/scrape/          → trigger background scrape task
-  GET    /api/v1/questions/companies/       → list all companies
-  POST   /api/v1/questions/companies/       → create company
-  GET    /api/v1/questions/topics/          → list all topics
-  GET    /api/v1/questions/<id>/similar/    → find semantically similar questions
-
-Design decisions:
-  • Semantic search is a POST (not GET) because the query string embedding is
-    computed on request — idempotent but with a side effect (LLM call).
-  • Scraping is always async (returns task_id for polling).
-  • List endpoint hides embedding and raw question_text for performance.
-"""
-
 import logging
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -50,8 +26,6 @@ from .tasks import scrape_and_ingest_questions
 logger = logging.getLogger(__name__)
 
 
-# ─── Company Endpoints ────────────────────────────────────────────────────────
-
 class CompanyListCreateView(generics.ListCreateAPIView):
     """
     GET  /companies/ → list all companies (for autocomplete in frontend)
@@ -63,8 +37,6 @@ class CompanyListCreateView(generics.ListCreateAPIView):
     search_fields    = ["name", "slug"]
     ordering_fields  = ["name", "created_at"]
 
-
-# ─── Topic Endpoints ──────────────────────────────────────────────────────────
 
 class TopicListCreateView(generics.ListCreateAPIView):
     """
@@ -80,7 +52,6 @@ class TopicListCreateView(generics.ListCreateAPIView):
         return Topic.objects.all().order_by("question_type", "name")
 
 
-# ─── Question List + Create ───────────────────────────────────────────────────
 
 class QuestionListCreateView(generics.ListCreateAPIView):
     """
@@ -259,36 +230,52 @@ class TriggerScrapeView(APIView):
     """
     POST /questions/scrape/
 
-    Manually trigger a scraping job for a question type + company/topic.
+    Manually trigger a scraping job for an optional category and company.
+    The category focuses page discovery; every supported question type found
+    on each fetched page is extracted and saved.
     Returns a task_id that can be polled at /api/v1/tasks/<task_id>/status/.
 
     Body:
-      question_type (str, required)
+      question_type (str, optional search focus)
       company_name  (str, optional)
-      topic_name    (str, optional)
-      target_count  (int, optional, default 10)
+      target_count  (int, optional, default 5)
 
     Useful for:
       • Pre-seeding the question bank before launch
       • Admin triggering enrichment for a new company
     """
 
+    def get(self, request):
+        return Response(
+            {
+                "endpoint": "/api/v1/questions/scrape/",
+                "method": "POST",
+                "example": {
+                    "question_type": "DSA_CODING",
+                    "company_name": "Amazon",
+                    "target_count": 5,
+                },
+            }
+        )
+
     def post(self, request):
         serializer = ScrapeRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        question_type = data.get("question_type", "")
 
         task = scrape_and_ingest_questions.delay(
-            question_type=data["question_type"],
+            question_type=question_type,
             company_name=data.get("company_name", ""),
-            topic_name=data.get("topic_name", ""),
-            target_count=data.get("target_count", 10),
+            target_count=data.get("target_count", 5),
         )
 
         return Response(
             {
                 "message": "Scraping task queued.",
                 "task_id": task.id,
+                "question_type": question_type,
+                "scope": "all question types found on each page",
                 "poll_url": f"/api/v1/tasks/{task.id}/status/",
             },
             status=status.HTTP_202_ACCEPTED,

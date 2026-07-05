@@ -87,10 +87,18 @@ export interface SemanticSearchPayload {
 }
 
 export interface ScrapeRequestPayload {
-  question_type: QuestionType;
+  question_type?: QuestionType;
   company_name?: string;
   topic_name?: string;
   target_count?: number;
+}
+
+export interface ScrapeTaskResponse {
+  message: string;
+  task_id: string;
+  question_type: QuestionType | '';
+  scope: string;
+  poll_url: string;
 }
 
 export interface TaskStatusResponse {

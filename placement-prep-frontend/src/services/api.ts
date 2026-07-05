@@ -9,6 +9,7 @@ import {
   QuestionListItem,
   QuestionStats,
   ScrapeRequestPayload,
+  ScrapeTaskResponse,
   SemanticSearchPayload,
   StartInterviewPayload,
   SubmitAnswerPayload,
@@ -121,7 +122,7 @@ export const questionsApi = {
     return response.data;
   },
 
-  triggerScrape: async (payload: ScrapeRequestPayload): Promise<{ message: string; task_id: string; poll_url: string }> => {
+  triggerScrape: async (payload: ScrapeRequestPayload): Promise<ScrapeTaskResponse> => {
     const response = await api.post('/questions/scrape/', payload);
     return response.data;
   },
