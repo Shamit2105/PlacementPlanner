@@ -4,6 +4,7 @@ from companies.models import Company
 
 
 class InterviewQuestionSerializer(serializers.ModelSerializer):
+    question_id = serializers.IntegerField(source="question.id", read_only=True)
     question_text = serializers.CharField(source="question.interview_question", read_only=True)
     question_type = serializers.CharField(source="question.question_type", read_only=True)
     difficulty = serializers.CharField(source="question.difficulty", read_only=True)
@@ -13,7 +14,7 @@ class InterviewQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewQuestion
         fields = [
-            "id", "order", "question_text", "question_type", "difficulty",
+            "id", "question_id", "order", "question_text", "question_type", "difficulty",
             "topic_tags", "reference_answer", "candidate_answer",
             "score", "verdict", "feedback", "strengths", "improvements",
             "missed_concepts", "status", "evaluated_at",

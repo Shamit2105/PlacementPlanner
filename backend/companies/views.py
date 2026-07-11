@@ -137,27 +137,6 @@ class GenerateAnswerView(APIView):
 # ─── Semantic Search ──────────────────────────────────────────────────────────
 
 class SemanticSearchView(APIView):
-    """
-    POST /questions/semantic-search/
-
-    Find questions semantically similar to a text query using pgvector
-    cosine distance on stored Gemini embeddings.
-
-    Body:
-      query         (str)  — the search query e.g. "explain quicksort"
-      question_type (str)  — optional filter
-      company_slug  (str)  — optional filter
-      limit         (int)  — max results (default 10)
-
-    WHY POST instead of GET?
-      Computing the query embedding requires a Gemini API call which may
-      take a few seconds. Caching by query string would help but we keep
-      it simple for now. Also, query text can be long.
-
-    NOTE: This endpoint calls Gemini embedding API (1 RPM free tier).
-    In production, add caching (Redis) on the query text → embedding lookup.
-    """
-
     def post(self, request):
         serializer = SemanticSearchSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -199,19 +178,15 @@ class SemanticSearchView(APIView):
         return Response({"count": len(questions_data), "results": questions_data})
 
 
-# ─── Similar Questions ────────────────────────────────────────────────────────
-
 class SimilarQuestionsView(APIView):
-    """
-    GET /questions/<id>/similar/
 
-    Returns questions semantically similar to the given question.
-    Uses the stored embedding of the reference question, so no Gemini call needed.
-    This is fast (pure DB query via pgvector).
-    """
 
     def get(self, request, pk):
-        limit = int(request.query_params.get("limit", 5))
+        try:
+            limit = int(request.query_params.get("limit", 3))
+        except (TypeError, ValueError):
+            limit = 3
+        limit = max(0, min(limit, 3))
         vs      = VectorService()
         results = vs.get_similar_questions(question_id=pk, limit=limit)
         
@@ -224,26 +199,8 @@ class SimilarQuestionsView(APIView):
         return Response({"count": len(data), "results": data})
 
 
-# ─── Scrape Trigger ──────────────────────────────────────────────────────────
-
 class TriggerScrapeView(APIView):
-    """
-    POST /questions/scrape/
-
-    Manually trigger a scraping job for an optional category and company.
-    The category focuses page discovery; every supported question type found
-    on each fetched page is extracted and saved.
-    Returns a task_id that can be polled at /api/v1/tasks/<task_id>/status/.
-
-    Body:
-      question_type (str, optional search focus)
-      company_name  (str, optional)
-      target_count  (int, optional, default 5)
-
-    Useful for:
-      • Pre-seeding the question bank before launch
-      • Admin triggering enrichment for a new company
-    """
+    
 
     def get(self, request):
         return Response(
@@ -282,18 +239,9 @@ class TriggerScrapeView(APIView):
         )
 
 
-# ─── Celery Task Status Polling ──────────────────────────────────────────────
-
 @api_view(["GET"])
 def task_status_view(request, task_id):
-    """
-    GET /api/v1/tasks/<task_id>/status/
-
-    Poll the status of a Celery background task.
-    Useful for the frontend to show a progress indicator.
-
-    States: PENDING | STARTED | SUCCESS | FAILURE | RETRY
-    """
+    
     result = AsyncResult(task_id)
     response = {
         "task_id": task_id,
@@ -308,16 +256,10 @@ def task_status_view(request, task_id):
     return Response(response)
 
 
-# ─── Question Bank Stats ─────────────────────────────────────────────────────
 
 @api_view(["GET"])
 def question_bank_stats(request):
-    """
-    GET /api/v1/questions/stats/
-
-    Returns counts by type, source, and status.
-    Used by the admin dashboard to monitor bank health.
-    """
+   
     from django.db.models import Count
     from .models import QuestionType
 

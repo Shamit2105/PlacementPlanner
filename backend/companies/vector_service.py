@@ -18,9 +18,8 @@ DISTANCE OPERATORS in pgvector Django:
   L2Distance      — Euclidean, good for dense feature vectors
   MaxInnerProduct — inner product, used when vectors are unit-normalized
 
-We use CosineDistance throughout because Gemini embeddings are unit-normalized.
+We use CosineDistance throughout because embeddings are unit-normalized.
 
-EMBEDDING DIMENSIONS: 768 (Gemini text-embedding-004 / embedding-001 output)
 """
 
 import logging

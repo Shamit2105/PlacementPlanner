@@ -183,6 +183,16 @@ export const interviewsApi = {
     return response.data;
   },
 
+  transcribeAnswer: async (id: number, questionOrder: number, audio: Blob): Promise<{ transcript: string }> => {
+    const form = new FormData();
+    form.append('question_order', String(questionOrder));
+    form.append('audio', audio, audio.type.includes('mp4') ? 'answer.m4a' : 'answer.webm');
+    const response = await api.post(`/interviews/sessions/${id}/transcribe-answer/`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   skipQuestion: async (id: number, questionOrder: number): Promise<InterviewQuestion> => {
     const response = await api.post(`/interviews/sessions/${id}/skip_question/`, {
       question_order: questionOrder,

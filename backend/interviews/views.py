@@ -1,5 +1,7 @@
 import logging
 
+import requests
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -196,6 +198,68 @@ class InterviewSessionViewSet(viewsets.ModelViewSet):
                     )
 
         return Response(InterviewQuestionSerializer(interview_q).data)
+
+    @action(detail=True, methods=["post"], url_path="transcribe-answer")
+    def transcribe_answer(self, request, pk=None):
+        """Transcribe a recorded answer for a non-coding interview question."""
+        session = self.get_object()
+        question_order = request.data.get("question_order")
+        audio = request.FILES.get("audio")
+
+        if not question_order or not audio:
+            return Response(
+                {"error": "question_order and audio are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        interview_q = get_object_or_404(
+            InterviewQuestion,
+            session=session,
+            order=question_order,
+        )
+        if interview_q.question.question_type == "DSA_CODING":
+            return Response(
+                {"error": "Voice answers are not enabled for coding questions."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if audio.size > 10 * 1024 * 1024:
+            return Response(
+                {"error": "Audio must be 10 MB or smaller."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not settings.GROQ_API_KEY:
+            return Response(
+                {"error": "Voice transcription is not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            transcription_response = requests.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+                files={
+                    "file": (
+                        audio.name or "answer.webm",
+                        audio.file,
+                        audio.content_type or "audio/webm",
+                    )
+                },
+                data={
+                    "model": "whisper-large-v3-turbo",
+                    "response_format": "json",
+                    "language": "en",
+                },
+                timeout=60,
+            )
+            transcription_response.raise_for_status()
+            transcript = transcription_response.json().get("text", "").strip()
+            return Response({"transcript": transcript})
+        except (requests.RequestException, ValueError) as exc:
+            logger.error("Voice transcription failed: %s", exc)
+            return Response(
+                {"error": "Voice transcription failed. Please try again."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
     @action(detail=True, methods=["get"])
     def next_question(self, request, pk=None):

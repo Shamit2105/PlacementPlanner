@@ -33,7 +33,7 @@ def scrape_and_ingest_questions(
     trigger_processing: bool = True,
 ):
     """
-    Scrape interview experiences and extract questions using LLM.
+    scrape interview experiences and extract questions using LLM.
     """
     logger.info(
         "Task: scrape_and_ingest | company=%s type=%s",
@@ -52,7 +52,7 @@ def scrape_and_ingest_questions(
         logger.error("Scraping failed: %s", exc)
         raise self.retry(exc=exc)
 
-    # --- ADD TRANSACTION PROTECTION FOR COMPANY LOOKUP ---
+    # add transaction protection for company lookup
     company_obj = None
     if company_name:
         with transaction.atomic():

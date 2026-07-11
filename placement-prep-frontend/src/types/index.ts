@@ -119,6 +119,7 @@ export interface QuestionStats {
 
 export interface InterviewQuestion {
   id: number;
+  question_id: number;
   order: number;
   question_text: string;
   question_type: QuestionType;
