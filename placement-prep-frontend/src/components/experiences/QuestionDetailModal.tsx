@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
-  Building2, 
-  HelpCircle, 
-  Loader2, 
-  Tag, 
-  Award,
+// import { motion } from 'framer-motion';
+import {
+  BookOpen,
+  Building2,
+  HelpCircle,
+  Loader2,
+  Tag,
   ExternalLink,
   Code,
   Sparkles,
@@ -67,7 +66,7 @@ export const MarkdownViewer: React.FC<{ text: string }> = ({ text }) => {
           if (trimmedPara.startsWith('* ') || trimmedPara.startsWith('- ') || trimmedPara.startsWith('1. ') || trimmedPara.split('\n').every(line => /^\s*([*\-+]|\d+\.)\s+/.test(line))) {
             const listLines = trimmedPara.split('\n');
             const isNumbered = /^\s*\d+\.\s+/.test(listLines[0]);
-            
+
             const listItems = listLines.map((line, lIdx) => {
               const cleanedLine = line.replace(/^\s*([*\-+]|\d+\.)\s+/, '');
               return (
@@ -135,7 +134,7 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [similarQuestions, setSimilarQuestions] = useState<QuestionListItem[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [errorSimilar, setErrorSimilar] = useState('');
@@ -152,7 +151,7 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
         try {
           const res = await questionsApi.getById(questionId);
           setDetail(res);
-          
+
           // Fetch similar questions
           setLoadingSimilar(true);
           setErrorSimilar('');
@@ -242,7 +241,7 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
                 <HelpCircle size={16} className="text-slate-400" />
                 Interview Question
               </h3>
-              
+
               {!showDeleteConfirm ? (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
@@ -274,7 +273,7 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
                 </div>
               )}
             </div>
-            
+
             {deleteError && (
               <p className="text-xs text-rose-600 font-semibold mb-2">{deleteError}</p>
             )}
@@ -288,13 +287,12 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
               <span className="rounded-full bg-cyan-100 border border-cyan-200 px-3 py-1 text-xs font-semibold text-cyan-800">
                 {detail.question_type_display}
               </span>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${
-                detail.difficulty === 'EASY' 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-                  : detail.difficulty === 'MEDIUM' 
-                  ? 'bg-amber-50 border-amber-200 text-amber-800' 
-                  : 'bg-rose-50 border-rose-200 text-rose-800'
-              }`}>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${detail.difficulty === 'EASY'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : detail.difficulty === 'MEDIUM'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}>
                 {detail.difficulty_display}
               </span>
               {detail.source_url && (
@@ -321,8 +319,8 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
               {detail.companies && detail.companies.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {detail.companies.map((company) => (
-                    <span 
-                      key={company.id} 
+                    <span
+                      key={company.id}
                       className="px-2.5 py-1 bg-white border border-sky-100 rounded-lg text-xs font-medium text-slate-700 shadow-sm"
                     >
                       {company.name}
@@ -343,8 +341,8 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
               {detail.topics && detail.topics.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {detail.topics.map((topic) => (
-                    <span 
-                      key={topic.id} 
+                    <span
+                      key={topic.id}
                       className="px-2.5 py-1 bg-white border border-teal-100 rounded-lg text-xs font-medium text-slate-700 shadow-sm"
                     >
                       {topic.name}
