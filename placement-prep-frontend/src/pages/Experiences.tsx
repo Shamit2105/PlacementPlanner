@@ -77,6 +77,12 @@ const Experiences: React.FC = () => {
     }
   };
 
+  const handleDeleteSuccess = (deletedId: number) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== deletedId));
+    setSemanticResults((prev) => prev.filter((q) => q.id !== deletedId));
+    setCount((prev) => Math.max(0, prev - 1));
+  };
+
   return (
     <div className="space-y-6">
       <header className="surface p-6 sm:p-8">
@@ -229,6 +235,7 @@ const Experiences: React.FC = () => {
         onClose={() => setIsDetailModalOpen(false)}
         questionId={selectedQuestionId}
         onSelectSimilar={(id) => setSelectedQuestionId(id)}
+        onDeleteSuccess={handleDeleteSuccess}
       />
     </div>
   );

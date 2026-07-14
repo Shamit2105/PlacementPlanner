@@ -26,7 +26,7 @@ ALLOWED_QUESTION_TYPES = {choice.value for choice in QuestionType}
 
 
 class LLMService:
-    MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+    MODEL = "openai/gpt-oss-20b"
 
     EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 

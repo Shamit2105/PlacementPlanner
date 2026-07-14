@@ -9,7 +9,8 @@ import {
   Award,
   ExternalLink,
   Code,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { questionsApi } from '../../services/api';
@@ -20,6 +21,7 @@ interface QuestionDetailModalProps {
   onClose: () => void;
   questionId: number | null;
   onSelectSimilar?: (id: number) => void;
+  onDeleteSuccess?: (id: number) => void;
 }
 
 // Markdown parser helper for formatting inline and block markdown elements
@@ -128,7 +130,7 @@ function parseInlineMarkdown(text: string): React.ReactNode[] {
   });
 }
 
-const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClose, questionId, onSelectSimilar }) => {
+const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClose, questionId, onSelectSimilar, onDeleteSuccess }) => {
   const [detail, setDetail] = useState<QuestionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -137,6 +139,10 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
   const [similarQuestions, setSimilarQuestions] = useState<QuestionListItem[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [errorSimilar, setErrorSimilar] = useState('');
+
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (isOpen && questionId !== null) {
@@ -171,6 +177,9 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
       setDetail(null);
       setSimilarQuestions([]);
       setErrorSimilar('');
+      setShowDeleteConfirm(false);
+      setDeleting(false);
+      setDeleteError('');
     }
   }, [isOpen, questionId]);
 
@@ -186,6 +195,25 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
       console.error(err);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (questionId === null) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await questionsApi.deleteById(questionId);
+      if (onDeleteSuccess) {
+        onDeleteSuccess(questionId);
+      }
+      onClose();
+    } catch (err) {
+      setDeleteError('Failed to delete question.');
+      console.error(err);
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -208,11 +236,49 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({ isOpen, onClo
       ) : detail ? (
         <div className="space-y-6">
           {/* Question Text */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-              <HelpCircle size={16} className="text-slate-400" />
-              Interview Question
-            </h3>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm relative">
+            <div className="flex justify-between items-start gap-4 mb-2">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <HelpCircle size={16} className="text-slate-400" />
+                Interview Question
+              </h3>
+              
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-slate-450 hover:text-rose-600 transition-colors p-1.5 rounded-lg hover:bg-rose-50 flex items-center justify-center"
+                  title="Delete Question"
+                >
+                  <Trash2 size={16} />
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 bg-rose-50/50 px-2 py-1 rounded-lg border border-rose-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 animate-pulse">
+                    Are you sure?
+                  </span>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[10px] font-bold shadow-sm transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {deleting ? <Loader2 size={10} className="animate-spin" /> : null}
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                    className="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[10px] font-bold transition-colors disabled:opacity-50"
+                  >
+                    No
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {deleteError && (
+              <p className="text-xs text-rose-600 font-semibold mb-2">{deleteError}</p>
+            )}
+
             <p className="text-base font-semibold text-slate-900 leading-relaxed">
               {detail.interview_question}
             </p>

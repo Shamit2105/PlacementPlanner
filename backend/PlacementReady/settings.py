@@ -145,12 +145,8 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite default
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",  # Create React App / Next.js default
-    "http://127.0.0.1:3000",
-]
+cors_allowed_origins_str = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000')
+CORS_ALLOWED_ORIGINS = cors_allowed_origins_str.split(',')
 
 CORS_ALLOW_CREDENTIALS = True
 

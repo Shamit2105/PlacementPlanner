@@ -7,6 +7,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
 from companies.models import Company, PlacementExperience
+from companies.scraper import QuestionScraper
 from django.conf import settings
 
 class Command(BaseCommand):
@@ -31,7 +32,16 @@ class Command(BaseCommand):
                 self.stdout.write(f"\n[*] Searching Google for: {company_name} {round_target}s...")
                 
                 # 1. Get URLs from Serper
-                query = f'"{company_name}" AND ("online assessment" OR "OA" OR "hackerrank") site:leetcode.com OR site:geeksforgeeks.org' if round_target == "OA" else f'"{company_name}" AND ("interview experience" OR "technical interview") site:leetcode.com OR site:geeksforgeeks.org'
+                if round_target == "OA":
+                    query = (
+                        f'"{company_name}" ("online assessment" OR "OA" OR "hackerrank") '
+                        '(site:leetcode.com/discuss OR site:geeksforgeeks.org)'
+                    )
+                else:
+                    query = (
+                        f'"{company_name}" ("interview experience" OR "technical interview") '
+                        '(site:leetcode.com/discuss OR site:geeksforgeeks.org)'
+                    )
                 response = requests.post("https://google.serper.dev/search", headers={'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}, json={"q": query, "num": 5})
                 urls = [item['link'] for item in response.json().get('organic', [])]
 
@@ -52,6 +62,13 @@ class Command(BaseCommand):
                         platform = "LeetCode"
 
                     if not raw_text:
+                        continue
+                    if not QuestionScraper._matches_company(raw_text, company_name):
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"  [~] Skipped: content is not for {company_name} -> {url}"
+                            )
+                        )
                         continue
 
                     # 4. HASH CHECK: Prevent exact duplicate content from different URLs

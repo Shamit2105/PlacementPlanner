@@ -29,12 +29,10 @@ def scrape_and_ingest_questions(
     self,
     question_type: str = "",
     company_name: str = "",
-    target_count: int = 10,
+    target_count: int = 5,
     trigger_processing: bool = True,
 ):
-    """
-    scrape interview experiences and extract questions using LLM.
-    """
+   
     logger.info(
         "Task: scrape_and_ingest | company=%s type=%s",
         company_name,
@@ -80,9 +78,7 @@ def scrape_and_ingest_questions(
                 "Raw content already exists for %s — checking for missing questions",
                 exp.get("source_url"),
             )
-            # Re-run extraction so pages ingested by older, type-filtered jobs
-            # can be backfilled. The question-level duplicate check below keeps
-            # already saved questions from being inserted again.
+           
         try:
             extracted_questions = llm.format_questions(
                 raw_text=raw_content.raw_text,

@@ -13,7 +13,7 @@ const OpsLab: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [newCompany, setNewCompany] = useState({ name: '', slug: '' });
   const [newTopic, setNewTopic] = useState({ name: '', question_type: 'DSA_CODING' as QuestionType });
-  const [scrapeForm, setScrapeForm] = useState<ScrapeRequestPayload>({ target_count: 10 });
+  const [scrapeForm, setScrapeForm] = useState<ScrapeRequestPayload>({ target_count: 5 });
   const [message, setMessage] = useState('');
 
   const load = async () => {
@@ -212,7 +212,7 @@ const OpsLab: React.FC = () => {
             type="number"
             min={1}
             max={50}
-            value={scrapeForm.target_count || 10}
+            value={scrapeForm.target_count || 5}
             onChange={(event) => setScrapeForm((prev) => ({ ...prev, target_count: Number(event.target.value) }))}
             className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm"
           />

@@ -27,10 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class CompanyListCreateView(generics.ListCreateAPIView):
-    """
-    GET  /companies/ → list all companies (for autocomplete in frontend)
-    POST /companies/ → create a new company entry
-    """
+   
     queryset         = Company.objects.all()
     serializer_class = CompanySerializer
     filter_backends  = [filters.SearchFilter, filters.OrderingFilter]
@@ -39,10 +36,7 @@ class CompanyListCreateView(generics.ListCreateAPIView):
 
 
 class TopicListCreateView(generics.ListCreateAPIView):
-    """
-    GET  /topics/ → list all topics, optionally filtered by question_type
-    POST /topics/ → create a topic
-    """
+   
     serializer_class = TopicSerializer
     filter_backends  = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["question_type"]
@@ -54,23 +48,7 @@ class TopicListCreateView(generics.ListCreateAPIView):
 
 
 class QuestionListCreateView(generics.ListCreateAPIView):
-    """
-    GET  /questions/
-      Query params:
-        question_type  — filter by category (DSA_CODING, OS, etc.)
-        status         — SCRAPED | PROCESSED | EMBEDDED | FAILED
-        source         — LC | GFG | GENERATED
-        company        — company slug
-        topic          — topic id
-        is_duplicate   — true/false
-        difficulty     — EASY | MEDIUM | HARD
-        search         — full-text search on interview_question
-        ordering       — times_used, created_at, difficulty
-
-    POST /questions/
-      Body: QuestionCreateSerializer fields
-      → Saves question and fires process_single_question Celery task
-    """
+   
     filter_backends  = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class  = QuestionFilter
     search_fields    = ["interview_question",]
@@ -133,8 +111,6 @@ class GenerateAnswerView(APIView):
             logger.error(f"Failed to generate answer for Question {pk}: {e}")
             return Response({"error": "Failed to generate answer."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-# ─── Semantic Search ──────────────────────────────────────────────────────────
 
 class SemanticSearchView(APIView):
     def post(self, request):
@@ -221,6 +197,8 @@ class TriggerScrapeView(APIView):
         data = serializer.validated_data
         question_type = data.get("question_type", "")
 
+        # target_count is validated by the serializer (max=5) and also
+        # enforced by MAX_PAGES_TOTAL inside the scraper.
         task = scrape_and_ingest_questions.delay(
             question_type=question_type,
             company_name=data.get("company_name", ""),

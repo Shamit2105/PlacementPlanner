@@ -21,11 +21,7 @@ class TopicSerializer(serializers.ModelSerializer):
 
 
 class QuestionListSerializer(serializers.ModelSerializer):
-    """
-    Compact representation for list endpoints.
-    Does NOT include the full interview_answer (could be 500+ words).
-    Shows a 200-char preview of the answer instead.
-    """
+    
     companies         = CompanySerializer(many=True, read_only=True)
     topics            = TopicSerializer(many=True, read_only=True)
     answer_preview    = serializers.SerializerMethodField()
@@ -62,10 +58,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
 
 
 class QuestionDetailSerializer(serializers.ModelSerializer):
-    """
-    Full question detail including the complete reference answer.
-    Used for /questions/<id>/ and in interview result views.
-    """
+   
     companies = CompanySerializer(many=True, read_only=True)
     topics    = TopicSerializer(many=True, read_only=True)
     question_type_display = serializers.CharField(
@@ -143,7 +136,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
         if topic_ids:
             question.topics.set(topic_ids)
 
-        # Trigger background LLM processing
+        
         
         process_single_question.delay(question.pk)
 
@@ -151,10 +144,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
 
 
 class SemanticSearchSerializer(serializers.Serializer):
-    """
-    Input validation for the semantic search endpoint.
-    The user provides a text query; we embed it and search pgvector.
-    """
+   
     query         = serializers.CharField(min_length=3, max_length=500)
     question_type = serializers.ChoiceField(
         choices=QuestionType.choices,
@@ -166,10 +156,7 @@ class SemanticSearchSerializer(serializers.Serializer):
 
 
 class ScrapeRequestSerializer(serializers.Serializer):
-    """
-    Input for the /questions/scrape/ endpoint.
-    Triggers the scrape_and_ingest_questions Celery task.
-    """
+   
     question_type = serializers.ChoiceField(
         choices=QuestionType.choices,
         required=False,
@@ -181,4 +168,4 @@ class ScrapeRequestSerializer(serializers.Serializer):
     )
     company_name  = serializers.CharField(max_length=120, required=False, allow_blank=True)
     topic_name    = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    target_count  = serializers.IntegerField(min_value=1, max_value=50, default=10)
+    target_count  = serializers.IntegerField(min_value=1, max_value=5, default=5)

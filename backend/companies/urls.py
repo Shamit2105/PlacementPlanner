@@ -17,7 +17,7 @@ urlpatterns = [
     path("<int:pk>/", views.QuestionDetailView.as_view(), name="question-detail"),
     path("<int:pk>/generate-answer/", views.GenerateAnswerView.as_view(), name="generate-answer"),
     path("<int:pk>/similar/", views.SimilarQuestionsView.as_view(), name="similar-questions"),
-
+    path("<int:pk>/delete",views.QuestionDetailView.as_view(),name="question-delete"),
     # ── Vector / Semantic ─────────────────────────────────────────────────────
     path("semantic-search/", views.SemanticSearchView.as_view(), name="semantic-search"),
 
